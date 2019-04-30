@@ -77,7 +77,7 @@ docker run --rm -it --name stac-gen-1 \
   // Set this to "NAIP_IMAGE_ID_FUNCTION" for NAIP, or "GENERIC_IMAGE_ID_FUNCTION" otherwise
   // See create_stac_catalog.py for details of what this does
   "S3_KEY_TO_IMAGE_ID": "NAIP_IMAGE_ID_FUNCTION",
-  // Optional; set this is follows for NAIP:
+  // Optional; set this as follows for NAIP or leave out otherwise:
   "S3_KEY_TO_FGDC_S3_KEY": "NAIP_FGDC_FUNCTION"
 }
 ```
