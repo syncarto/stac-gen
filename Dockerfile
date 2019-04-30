@@ -31,5 +31,3 @@ RUN tar xzvf bin_lnx.tar.gz
 RUN cp tools/bin/mp.lnx /usr/local/bin/mp
 
 WORKDIR /code
-
-CMD ["./run_naip_rancher.sh"]
