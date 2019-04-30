@@ -1,0 +1,22 @@
+{
+  "BUCKET_NAME": "bucket-with-geotiffs",
+  "BUCKET_REGION": "us-west-2",
+  "BUCKET_BASE_URL": "https://s3-us-west-2.amazonaws.com/bucket-with-geotiffs/",
+  "OUTPUT_BUCKET_NAME": "bucket-to-upload-catalog",
+  "OUTPUT_BUCKET_REGION": "us-west-2",
+  "OUTPUT_BUCKET_BASE_URL": "https://s3.us-west-2.amazonaws.com/bucket-to-upload-catalog/",
+  "ITEM_TIMESTAMP": "2010-01-01T00:00:00Z",
+  "COG_SUFFIX": ".tif",
+  "CATALOG_ID": "GenericImageryCatalog",
+  "CATALOG_DESCRIPTION": "catalog of generic images",
+  "ROOT_CATALOG_DIR": "",
+  "COLLECTION_METADATA": {
+    "id": "GenericImageryCollection",
+    "description": "collection of generic images",
+    "title": "Generic Images",
+    "license": "Unknown",
+    "stac_version": "0.6.0",
+    "extent": {}
+  },
+  "S3_KEY_TO_IMAGE_ID": "GENERIC_IMAGE_ID_FUNCTION"
+}

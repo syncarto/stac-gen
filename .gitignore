@@ -1,0 +1,6 @@
+upload*.txt
+convert*.txt
+__pycache__
+*.pyc
+.*.swp
+naip_configs

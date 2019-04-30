@@ -1,0 +1,7 @@
+awscli
+boto3
+rasterio
+rio-cogeo
+sat-stac
+shapely
+stac-validator

@@ -1,0 +1,24 @@
+{
+  "BUCKET_NAME": "naip-visualization",
+  "BUCKET_REGION": "us-west-2",
+  "BUCKET_BASE_URL": "https://s3.us-west-2.amazonaws.com/naip-visualization/",
+  "REQUESTER_PAYS": true,
+  "BUCKET_PREFIX": "wi/2017/100cm/rgb/",
+  "OUTPUT_BUCKET_NAME": "name-of-bucket",
+  "OUTPUT_BUCKET_REGION": "us-west-2",
+  "OUTPUT_BUCKET_BASE_URL": "https://s3.us-west-2.amazonaws.com/name-of-bucket/",
+  "COG_SUFFIX": ".tif",
+  "CATALOG_ID": "NAIP_wi_2017_100cm",
+  "CATALOG_DESCRIPTION": "NAIP_wi_2017_100cm",
+  "ROOT_CATALOG_DIR": "naip",
+  "COLLECTION_METADATA": {
+    "id": "wi/2017/100cm/rgb",
+    "description": "NAIP wi 2017 100cm",
+    "title": "NAIP wi 2017 100cm",
+    "license": "Public Domain with Attribution",
+    "stac_version": "0.6.0",
+    "extent": {}
+  },
+  "S3_KEY_TO_IMAGE_ID": "NAIP_IMAGE_ID_FUNCTION",
+  "S3_KEY_TO_FGDC_S3_KEY": "NAIP_FGDC_FUNCTION"
+}
