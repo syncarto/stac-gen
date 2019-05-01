@@ -2,7 +2,7 @@
 
 The demo use case is to create a STAC catalog for the [AWS publicly available NAIP dataset](https://registry.opendata.aws/naip/) in the `naip-visualization` bucket.
 
-To understand the output of this tool, look at the contents of the `example_output_naip` subdirectory. This is a small subset of the STAC catalog that is generated for NAIP, including the root catalog, one collection, and a handful of items belonging to that collection.
+To understand the output of this tool, look at the contents of the `example_output` subdirectory. This is a small subset of the STAC catalog that is generated for NAIP, including the root catalog, one collection, and a handful of items belonging to that collection.
 
 There is also an example configuration for creating a STAC catalog for a "generic" bucket. The script will discover every TIF in the bucket and create corresponding STAC items for each one.
 
