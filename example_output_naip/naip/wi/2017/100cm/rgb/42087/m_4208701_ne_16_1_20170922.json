@@ -1,0 +1,109 @@
+{
+  "id": "42087/m_4208701_ne_16_1_20170922",
+  "type": "Feature",
+  "bbox": [
+    -87.9421743540024,
+    42.93425873557641,
+    -87.87038753687955,
+    43.00323164739845
+  ],
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -87.87038753687955,
+          42.93425873557641
+        ],
+        [
+          -87.87038753687955,
+          43.00323164739845
+        ],
+        [
+          -87.9421743540024,
+          43.00323164739845
+        ],
+        [
+          -87.9421743540024,
+          42.93425873557641
+        ],
+        [
+          -87.87038753687955,
+          42.93425873557641
+        ]
+      ]
+    ]
+  },
+  "properties": {
+    "datetime": "2017-09-22T00:00:00Z",
+    "collection": "NAIP_wi_2017_100cm",
+    "eo:epsg": 26916,
+    "place_keywords": "WI;Milwaukee;55079;WI079;MILWAUKEE CO WI FSA;4208701;GREENDALE, NE;GREENDALE",
+    "eo:gsd": 1,
+    "eo:instrument": "Leica ADS100",
+    "eo:constellation": "NAIP",
+    "eo:bands": [
+      {
+        "name": "B01",
+        "common_name": "red",
+        "gsd": 1,
+        "center_wavelength": 635,
+        "full_width_half_max": 16,
+        "accuracy": 6
+      },
+      {
+        "name": "B02",
+        "common_name": "green",
+        "gsd": 1,
+        "center_wavelength": 555,
+        "full_width_half_max": 30,
+        "accuracy": 6
+      },
+      {
+        "name": "B03",
+        "common_name": "blue",
+        "gsd": 1,
+        "center_wavelength": 465,
+        "full_width_half_max": 30,
+        "accuracy": 6
+      },
+      {
+        "name": "B04",
+        "common_name": "nir",
+        "gsd": 1,
+        "center_wavelength": 845,
+        "full_width_half_max": 37,
+        "accuracy": 6
+      }
+    ]
+  },
+  "assets": {
+    "visual": {
+      "href": "s3://naip-visualization/wi/2017/100cm/rgb/42087/m_4208701_ne_16_1_20170922.tif",
+      "type": "image/vnd.stac.geotiff; cloud-optimized=true"
+    },
+    "metadata": {
+      "href": "s3://naip-visualization/wi/2017/100cm/fgdc/42087/m_4208701_ne_16_1_20170922.txt",
+      "type": "text/plain",
+      "title": "FGDC metadata"
+    }
+  },
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://s3.us-west-2.amazonaws.com/your-bucket-name/naip/wi/2017/100cm/rgb/42087/m_4208701_ne_16_1_20170922.json"
+    },
+    {
+      "rel": "root",
+      "href": "../../../../../catalog.json"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json"
+    },
+    {
+      "rel": "collection",
+      "href": "../catalog.json"
+    }
+  ]
+}

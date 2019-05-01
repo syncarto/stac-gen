@@ -1,0 +1,19 @@
+{
+  "id": "NAIP_wi_2017_100cm",
+  "stac_version": "0.6.0",
+  "description": "NAIP_wi_2017_100cm",
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://s3.us-west-2.amazonaws.com/your-bucket-name/naip/catalog.json"
+    },
+    {
+      "rel": "root",
+      "href": "./catalog.json"
+    },
+    {
+      "rel": "child",
+      "href": "wi/2017/100cm/rgb/catalog.json"
+    }
+  ]
+}

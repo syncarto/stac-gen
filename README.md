@@ -2,7 +2,11 @@
 
 The demo use case is to create a STAC catalog for the [AWS publicly available NAIP dataset](https://registry.opendata.aws/naip/) in the `naip-visualization` bucket.
 
+To understand the output of this tool, look at the contents of the `example_output_naip` subdirectory. This is a small subset of the STAC catalog that is generated for NAIP, including the root catalog, one collection, and a handful of items belonging to that collection.
+
 There is also an example configuration for creating a STAC catalog for a "generic" bucket. The script will discover every TIF in the bucket and create corresponding STAC items for each one.
+
+The resulting STAC catalog can optionally be linted using using [stac-validator](https://github.com/sparkgeo/stac-validator) (see the `DISABLE_STAC_LINT` configuration option).
 
 # Command line usage
 
@@ -78,7 +82,9 @@ docker run --rm -it --name stac-gen-1 \
   // See create_stac_catalog.py for details of what this does
   "S3_KEY_TO_IMAGE_ID": "NAIP_IMAGE_ID_FUNCTION",
   // Optional; set this as follows for NAIP or leave out otherwise:
-  "S3_KEY_TO_FGDC_S3_KEY": "NAIP_FGDC_FUNCTION"
+  "S3_KEY_TO_FGDC_S3_KEY": "NAIP_FGDC_FUNCTION",
+  // Set this to true if you want to disable STAC linting after catalog creation (faster for large datasets)
+  "DISABLE_STAC_LINT": false,
 }
 ```
 

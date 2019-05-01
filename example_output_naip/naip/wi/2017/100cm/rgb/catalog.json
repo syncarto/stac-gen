@@ -1,0 +1,45 @@
+{
+  "id": "wi/2017/100cm/rgb",
+  "description": "NAIP wi 2017 100cm",
+  "title": "NAIP wi 2017 100cm",
+  "license": "Public Domain with Attribution",
+  "stac_version": "0.6.0",
+  "extent": {
+    "spatial": [
+      -88.00474653140658,
+      42.871762936750315,
+      -87.87038753687955,
+      43.00326102980244
+    ],
+    "temporal": [
+      "2017-09-22T00:00:00Z",
+      "2017-09-22T00:00:00Z"
+    ]
+  },
+  "links": [
+    {
+      "rel": "self",
+      "href": "https://s3.us-west-2.amazonaws.com/your-bucket-name/naip/wi/2017/100cm/rgb/catalog.json"
+    },
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json"
+    },
+    {
+      "rel": "parent",
+      "href": "../../../../catalog.json"
+    },
+    {
+      "rel": "item",
+      "href": "42087/m_4208701_ne_16_1_20170922.json"
+    },
+    {
+      "rel": "item",
+      "href": "42087/m_4208701_nw_16_1_20170922.json"
+    },
+    {
+      "rel": "item",
+      "href": "42087/m_4208701_se_16_1_20170922.json"
+    }
+  ]
+}
