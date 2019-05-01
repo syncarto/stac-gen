@@ -91,7 +91,7 @@ def publish_to_s3(catalog_dir):
 
         new_object = s3.Object(STAC_CONFIG['OUTPUT_BUCKET_NAME'], s3_key)
         print('uploading {} to {}'.format(str(json_path), s3_key))
-        # new_object.upload_file(str(json_path))
+        new_object.upload_file(str(json_path))
         print('...upload complete')
 
 
@@ -290,7 +290,7 @@ def main():
                 'earliest': None,
                 'latest': None,
             }
-    for input_key in input_keys[0:3]:
+    for input_key in input_keys:
 
         if STAC_CONFIG.get('REQUESTER_PAYS', False):
             # rasterio needs s3 url not http for requester pays
