@@ -14,9 +14,6 @@ import shapely.geometry
 import satstac
 
 
-# temp directory inside container; can leave this as-is
-TEMP_DIR = '/work'
-
 STAC_DATE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
 def generic_image_id_function(input_key):
@@ -378,13 +375,20 @@ def main():
 
 if __name__ == '__main__':
     default_config_path = "config.json"
+    default_temp_dir = '/work'
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--config", 
             help="Path to json config file (default: {})".format(default_config_path), 
                 default=default_config_path,
             )
+    parser.add_argument("-d", "--tempdir", 
+            help="Path to temp working dir (default: {})".format(default_temp_dir), 
+                default=default_temp_dir,
+            )
     args = parser.parse_args()
     config_path = args.config
     with open(config_path) as f:
         STAC_CONFIG = json.loads(f.read())
+    TEMP_DIR = args.tempdir
     main()

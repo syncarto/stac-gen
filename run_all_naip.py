@@ -1,5 +1,6 @@
 import os
 import json
+import multiprocessing
 
 all_cases = [
     ('al', '2015', '100cm'),
@@ -64,7 +65,7 @@ all_cases = [
     ('mi', '2014', '100cm'),
     ('mi', '2016', '60cm'),
     ('mi', '2012', '100cm'),
-    # ('mn', '2013', '100cm'),  # mjh commenting this out temporarily since it already ran
+    ('mn', '2013', '100cm'),
     ('mn', '2015', '100cm'),
     ('mn', '2017', '100cm'),
     ('mo', '2012', '100cm'),
@@ -175,11 +176,15 @@ for case in all_cases:
 for state in cases_by_state:
     cases_by_state[state] = sorted(cases_by_state[state], key=lambda a: int(a[1]))
 
-LIMIT_STATES = ['mn']
+def run_naip_year(cmd_log_file):
+    cmd, log_file = cmd_log_file
+    print('logging to file: {}'.format(log_file))
+    print(cmd)
+    os.system(cmd)
+
+commands_log_files = []
 for state in cases_by_state:
     for case in cases_by_state[state]:
-        if state not in LIMIT_STATES:
-            continue
 
         _, year, res = case
 
@@ -201,6 +206,10 @@ for state in cases_by_state:
             # using the item "collection" property here, but that would
             # require forking sat-api to index another property
             config['ITEM_COLLECTION_PROPERTY'] = 'NAIP_LATEST'
+        else:
+            # As a first pass, only run "latest" years since that's what will
+            # actually get displayed
+            continue
 
         config['DISABLE_STAC_LINT'] = True
 
@@ -208,8 +217,9 @@ for state in cases_by_state:
             f.write(json.dumps(config, indent=2))
 
         log_file = os.path.join(LOG_DIR, '{}.txt'.format(os.path.join(config['CATALOG_ID'])))
-        print('logging to file: {}'.format(log_file))
-        cmd = 'python3 create_stac_catalog.py --config {} >> {} 2>&1'.format(config_filename, log_file)
-        print(cmd)
-        os.system(cmd)
+        temp_dir = os.path.join('/work', config['CATALOG_ID'])
+        cmd = 'python3 create_stac_catalog.py --config {} --tempdir {} >> {} 2>&1'.format(config_filename, temp_dir, log_file)
+        commands_log_files.append((cmd, log_file))
 
+pool = multiprocessing.Pool(processes=2)
+pool.map(run_naip_year, commands_log_files)
