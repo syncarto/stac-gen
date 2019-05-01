@@ -1,6 +1,6 @@
 `stac-gen` is a tool for creating a static [STAC](https://github.com/radiantearth/stac-spec) catalog using [sat-stac](https://github.com/sat-utils/sat-stac) and uploading the catalog to an S3 bucket. It is configured via a json file (documented below). Once a bucket is configured, the tool will determine the spatial extent of each raster in the bucket, create corresponding STAC item json files, and also create root catalog and corresponding collection json files. Once this is completed, the json files will be uploaded to the configured output bucket (can be the same or different as input bucket), at which point the catalog is suitable for indexing via e.g. [sat-api](https://github.com/sat-utils/sat-api).
 
-The demo use case is to create a STAC catalog for the [AWS publicly available NAIP dataset](https://registry.opendata.aws/naip/) in the `naip-visualization` bucket.
+The demo use case is to create a STAC catalog for the [AWS publicly available NAIP dataset](https://registry.opendata.aws/naip/) in the `naip-visualization` bucket. The tool will create one STAC collection per state per year, and one STAC item per geotiff in the NAIP bucket. Each collection is linked to a root STAC catalog.
 
 To understand the output of this tool, look at the contents of the `example_output` subdirectory. This is a small subset of the STAC catalog that is generated for NAIP, including the root catalog, one collection, and a handful of items belonging to that collection.
 
