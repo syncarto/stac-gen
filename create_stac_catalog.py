@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 import json
 import argparse
+import time
 
 import boto3
 import rasterio
@@ -119,15 +120,14 @@ def get_s3_listing():
 
 
 def download_s3_file(bucket, key, filename, requester_pays=False):
-    # since we have to support requester pays, easier to just use awscli
-    # than lower level boto3 client
     s3_url = 's3://{}/{}'.format(bucket, key)
-    cmd = ['aws', 's3', 'cp', s3_url, filename]
+
+    print("Downloading {} to {}".format(s3_url, filename))
     if requester_pays:
-        cmd.append('--request-payer')
-    print(' '.join(cmd))
-    output = subprocess.check_output(cmd).decode()
-    print(output)
+        bucket.download_file(key, filename, {'RequestPayer': 'requester'})
+    else:
+        bucket.download_file(key, filename)
+    print('...S3 download complete')
 
 
 def update_spatial_extent(extent, new_bounds):
@@ -149,19 +149,24 @@ def update_temporal_extent(extent, datetime_obj):
         extent['latest'] = datetime_obj
 
 
-def add_fgdc_metadata_to_item(input_key, item_dict):
+def add_fgdc_metadata_to_item(bucket, input_key, item_dict):
     fgdc_key = config_to_function_map[STAC_CONFIG['S3_KEY_TO_FGDC_S3_KEY']](input_key)
     fgdc_file = os.path.join(TEMP_DIR, os.path.basename(fgdc_key))
 
-    download_s3_file(STAC_CONFIG['BUCKET_NAME'], fgdc_key, fgdc_file, requester_pays=True)
+    t0 = time.time()
+    download_s3_file(bucket, fgdc_key, fgdc_file, requester_pays=True)
+    print('time to download fgdc file: {}s'.format(time.time()-t0))
 
     fgdc_file_xml = fgdc_file.replace('.txt', '.xml')
 
     print('converting {} to {} using mp tool'.format(fgdc_file, fgdc_file_xml))
     args = ['mp', '-x', fgdc_file_xml, fgdc_file]
+    t0 = time.time()
     output = subprocess.check_output(args).decode()
+    print('time to run mp: {}s'.format(time.time()-t0))
     print(output)
 
+    t0 = time.time()
     tree = ET.parse(fgdc_file_xml)
     root = tree.getroot()
 
@@ -178,11 +183,13 @@ def add_fgdc_metadata_to_item(input_key, item_dict):
     # Can't find a stac standard property for this but it seems useful
     item_dict['properties']['place_keywords'] = ';'.join(places)
     print(item_dict['properties']['place_keywords'])
+    print('time to parse xml: {}s'.format(time.time()-t0))
 
     # do some more naip-specific stuff since this part would need to be reworked 
     # to support non-naip sources with fgdc metadata anyway
     item_dict['properties']['eo:gsd'] = 1.0
     item_dict['properties']['eo:instrument'] = "Leica ADS100"
+    item_dict['properties']['eo:constellation'] = "NAIP"
     item_dict['properties']['eo:bands'] = [
             # credit Jeff Albrecht (github.com/geospatial-jeff):
             # https://github.com/geospatial-jeff/cognition-datasources-naip/blob/master/docs/example.json
@@ -273,6 +280,9 @@ def main():
         shutil.rmtree(TEMP_DIR)
     os.makedirs(TEMP_DIR)
 
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(STAC_CONFIG['BUCKET_NAME'])
+
     input_keys = get_s3_listing()
     input_keys = [f for f in input_keys if f.endswith(STAC_CONFIG['COG_SUFFIX'])]
 
@@ -315,7 +325,7 @@ def main():
             item_dicts.append(item_dict)
 
         if 'S3_KEY_TO_FGDC_S3_KEY' in STAC_CONFIG:
-            add_fgdc_metadata_to_item(input_key, item_dict)
+            add_fgdc_metadata_to_item(bucket, input_key, item_dict)
 
         update_spatial_extent(spatial_extent, bounds_geo)
         update_temporal_extent(temporal_extent, item_dict['properties']['datetime'])
