@@ -74,6 +74,16 @@ def create_item(image_id, image_url, bounds, epsg):
                  }
              }
            }
+
+    # naip-specific hack to add footprint id property
+    if 'naip-visualization' in image_url:
+        # turns '40077/m_4007746_ne_18_1_20170709' into '4007746_ne'
+        try:
+            parts = image_id.split('/')[1].split('_')
+            item['properties']['naip:quarter_quad_id'] = '{}_{}'.format(parts[1], parts[2])
+        except:
+            print('failed to turn {} into naip quarter quad id'.format(image_id))
+
     return item
 
 
