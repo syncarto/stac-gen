@@ -218,7 +218,7 @@ for state in cases_by_state:
 
         log_file = os.path.join(LOG_DIR, '{}.txt'.format(os.path.join(config['CATALOG_ID'])))
         temp_dir = os.path.join('/work', config['CATALOG_ID'])
-        cmd = 'python3 create_stac_catalog.py --config {} --tempdir {} >> {} 2>&1'.format(config_filename, temp_dir, log_file)
+        cmd = 'python3 stac_gen/create_stac_catalog.py --config {} --tempdir {} >> {} 2>&1'.format(config_filename, temp_dir, log_file)
         commands_log_files.append((cmd, log_file))
 
 pool = multiprocessing.Pool(processes=2)

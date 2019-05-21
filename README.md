@@ -11,7 +11,7 @@ The resulting STAC catalog can optionally be linted using using [stac-validator]
 # Command line usage
 
 ```bash
-$ python3 create_stac_catalog.py -h
+$ python3 stac_gen/create_stac_catalog.py -h
 usage: create_stac_catalog.py [-h] [-c CONFIG]
 
 optional arguments:
@@ -37,7 +37,7 @@ docker run --rm -it --name stac-gen-1 \
   -e AWS_PROFILE=default \
   -e AWS_REQUEST_PAYER=requester \
   stac-gen \
-  python3 create_stac_catalog.py --config naip_config.json
+  python3 stac_gen/create_stac_catalog.py --config naip_config.json
 ```
 
 # Config file details
