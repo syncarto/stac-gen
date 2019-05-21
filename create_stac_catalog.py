@@ -50,7 +50,7 @@ config_to_function_map = {
         }
 
 
-def create_item(image_id, image_url, bounds, epsg):
+def create_item(stac_config, image_id, image_url, bounds, epsg):
     item = {
              'id': image_id,
              'type': 'Feature',
@@ -60,8 +60,8 @@ def create_item(image_id, image_url, bounds, epsg):
              'bbox': list(bounds),
              'geometry': shapely.geometry.mapping(shapely.geometry.box(*bounds)),
              'properties': {
-                 'datetime': STAC_CONFIG.get('ITEM_TIMESTAMP', None),
-                 'collection': STAC_CONFIG.get('ITEM_COLLECTION_PROPERTY', STAC_CONFIG['CATALOG_ID']),
+                 'datetime': stac_config.get('ITEM_TIMESTAMP', None),
+                 'collection': stac_config.get('ITEM_COLLECTION_PROPERTY', stac_config['CATALOG_ID']),
                  'eo:epsg': epsg,
              },
              'assets': {
@@ -87,28 +87,28 @@ def create_item(image_id, image_url, bounds, epsg):
     return item
 
 
-def publish_to_s3(catalog_dir):
-    s3 = boto3.resource('s3', region_name=STAC_CONFIG['OUTPUT_BUCKET_REGION'])
+def publish_to_s3(stac_config, catalog_dir):
+    s3 = boto3.resource('s3', region_name=stac_config['OUTPUT_BUCKET_REGION'])
 
     # simply pushes every json file in catalog_dir to S3, maintining dir hierarchy
     root_path = pathlib.Path(catalog_dir)
     json_paths = list(root_path.rglob("*.json"))
     for json_path in json_paths:
-        # remove the TEMP_DIR part of the path to get s3 key
+        # remove the temp_dir part of the path to get s3 key
         s3_key = str(json_path.relative_to(root_path))
 
-        new_object = s3.Object(STAC_CONFIG['OUTPUT_BUCKET_NAME'], s3_key)
+        new_object = s3.Object(stac_config['OUTPUT_BUCKET_NAME'], s3_key)
         print('uploading {} to {}'.format(str(json_path), s3_key))
         new_object.upload_file(str(json_path))
         print('...upload complete')
 
 
-def get_s3_listing():
+def get_s3_listing(stac_config):
     # NOTE, we can't just use "bucket.objects.all()" b/c then there's no
     #       way to support requester pays (as far as I can tell)
     # Could just set "MaxKeys" but that doesn't actually guarantee you'll get that many
-    bucket_prefix = STAC_CONFIG.get('BUCKET_PREFIX', None)
-    response = boto3.client('s3').list_objects(Bucket=STAC_CONFIG['BUCKET_NAME'],
+    bucket_prefix = stac_config.get('BUCKET_PREFIX', None)
+    response = boto3.client('s3').list_objects(Bucket=stac_config['BUCKET_NAME'],
            RequestPayer='requester',
            Prefix=bucket_prefix,
            )
@@ -119,7 +119,7 @@ def get_s3_listing():
         assert 'NextMarker' not in response
         marker = response['Contents'][-1]['Key']
         print('making request for next page with marker {}'.format(marker))
-        response = boto3.client('s3').list_objects(Bucket=STAC_CONFIG['BUCKET_NAME'],
+        response = boto3.client('s3').list_objects(Bucket=stac_config['BUCKET_NAME'],
                RequestPayer='requester',
                Prefix=bucket_prefix,
                Marker=marker,
@@ -159,9 +159,9 @@ def update_temporal_extent(extent, datetime_obj):
         extent['latest'] = datetime_obj
 
 
-def add_fgdc_metadata_to_item(bucket, input_key, item_dict):
-    fgdc_key = config_to_function_map[STAC_CONFIG['S3_KEY_TO_FGDC_S3_KEY']](input_key)
-    fgdc_file = os.path.join(TEMP_DIR, os.path.basename(fgdc_key))
+def add_fgdc_metadata_to_item(stac_config, temp_dir, bucket, input_key, item_dict):
+    fgdc_key = config_to_function_map[stac_config['S3_KEY_TO_FGDC_S3_KEY']](input_key)
+    fgdc_file = os.path.join(temp_dir, os.path.basename(fgdc_key))
 
     t0 = time.time()
     download_s3_file(bucket, fgdc_key, fgdc_file, requester_pays=True)
@@ -239,7 +239,7 @@ def add_fgdc_metadata_to_item(bucket, input_key, item_dict):
 
     # add link to fgdc metadata
     item_dict['assets']['metadata'] = {
-                'href': 's3://{}/{}'.format(STAC_CONFIG['BUCKET_NAME'], fgdc_key),
+                'href': 's3://{}/{}'.format(stac_config['BUCKET_NAME'], fgdc_key),
                 'type': 'text/plain',
                 'title': 'FGDC metadata',
             }
@@ -260,14 +260,14 @@ def assert_valid_stac_lint(stac_validator_output_string):
                 result['path'], result['error_message']))
 
 
-def lint_stac_local(catalog_dir):
+def lint_stac_local(stac_config, catalog_dir):
     # validate all catalog/collection/items with stac_validator
     # (here we can't just use --follow since we haven't uploaded
     # to s3 yet so links don't make sense)
     root_path = pathlib.Path(catalog_dir)
     json_paths = [str(a) for a in root_path.rglob("*.json")]
     for json_path in json_paths:
-        cmd = ['stac_validator', json_path, '-v', 'v' + STAC_CONFIG['COLLECTION_METADATA']['stac_version'],
+        cmd = ['stac_validator', json_path, '-v', 'v' + stac_config['COLLECTION_METADATA']['stac_version'],
                 '--verbose']
         print(' '.join(cmd))
         output = subprocess.check_output(cmd).decode()
@@ -275,9 +275,9 @@ def lint_stac_local(catalog_dir):
         assert_valid_stac_lint(output)
 
 
-def lint_uploaded_stac(root_catalog_url):
+def lint_uploaded_stac(stac_config, root_catalog_url):
     # here we can use --follow to do everything at once
-    cmd = ['stac_validator', root_catalog_url, '-v', 'v' + STAC_CONFIG['COLLECTION_METADATA']['stac_version'],
+    cmd = ['stac_validator', root_catalog_url, '-v', 'v' + stac_config['COLLECTION_METADATA']['stac_version'],
             '--follow', '--verbose']
     print(' '.join(cmd))
     output = subprocess.check_output(cmd).decode()
@@ -285,16 +285,16 @@ def lint_uploaded_stac(root_catalog_url):
     assert_valid_stac_lint(output)
 
 
-def main():
-    if os.path.isdir(TEMP_DIR):
-        shutil.rmtree(TEMP_DIR)
-    os.makedirs(TEMP_DIR)
+def create_stac_catalog(temp_dir, stac_config):
+    if os.path.isdir(temp_dir):
+        shutil.rmtree(temp_dir)
+    os.makedirs(temp_dir)
 
     s3 = boto3.resource('s3')
-    bucket = s3.Bucket(STAC_CONFIG['BUCKET_NAME'])
+    bucket = s3.Bucket(stac_config['BUCKET_NAME'])
 
-    input_keys = get_s3_listing()
-    input_keys = [f for f in input_keys if f.endswith(STAC_CONFIG['COG_SUFFIX'])]
+    input_keys = get_s3_listing(stac_config)
+    input_keys = [f for f in input_keys if f.endswith(stac_config['COG_SUFFIX'])]
 
     item_dicts = []
     spatial_extent = {
@@ -309,14 +309,14 @@ def main():
             }
     for input_key in input_keys:
 
-        if STAC_CONFIG.get('REQUESTER_PAYS', False):
+        if stac_config.get('REQUESTER_PAYS', False):
             # rasterio needs s3 url not http for requester pays
             # NOTE this will also result in the stac item asset link looking like
             #      s3://... instead of https:// which is actually good b/c the ONLY
             #      way to access it is via S3 api with requester pays
-            image_url = 's3://{}/{}'.format(STAC_CONFIG['BUCKET_NAME'], input_key)
+            image_url = 's3://{}/{}'.format(stac_config['BUCKET_NAME'], input_key)
         else:
-            image_url = STAC_CONFIG['BUCKET_BASE_URL'] + input_key
+            image_url = stac_config['BUCKET_BASE_URL'] + input_key
 
         with rasterio.open(image_url, 'r') as raster_file:
             bounds = raster_file.bounds
@@ -324,18 +324,18 @@ def main():
                     bounds.left, bounds.bottom, bounds.right, bounds.top)
             print(bounds_geo)
 
-            image_id = config_to_function_map[STAC_CONFIG['S3_KEY_TO_IMAGE_ID']](input_key)
+            image_id = config_to_function_map[stac_config['S3_KEY_TO_IMAGE_ID']](input_key)
             print('determined item id {} from s3 key {}'.format(image_id, input_key))
 
             epsg = None
             if raster_file.crs.is_epsg_code:
                 epsg = raster_file.crs.to_epsg()
 
-            item_dict = create_item(image_id, image_url, bounds_geo, epsg)
+            item_dict = create_item(stac_config, image_id, image_url, bounds_geo, epsg)
             item_dicts.append(item_dict)
 
-        if 'S3_KEY_TO_FGDC_S3_KEY' in STAC_CONFIG:
-            add_fgdc_metadata_to_item(bucket, input_key, item_dict)
+        if 'S3_KEY_TO_FGDC_S3_KEY' in stac_config:
+            add_fgdc_metadata_to_item(stac_config, temp_dir, bucket, input_key, item_dict)
 
         update_spatial_extent(spatial_extent, bounds_geo)
         update_temporal_extent(temporal_extent, item_dict['properties']['datetime'])
@@ -348,22 +348,22 @@ def main():
             pass
 
     # update collection metadata with max bounds discovered from all rasters
-    STAC_CONFIG['COLLECTION_METADATA']['extent']['spatial'] = [
+    stac_config['COLLECTION_METADATA']['extent']['spatial'] = [
                 spatial_extent['left'],
                 spatial_extent['bottom'],
                 spatial_extent['right'],
                 spatial_extent['top'],
             ]
-    print('determined spatial extent: {}'.format(STAC_CONFIG['COLLECTION_METADATA']['extent']['spatial']))
-    STAC_CONFIG['COLLECTION_METADATA']['extent']['temporal'] = [
+    print('determined spatial extent: {}'.format(stac_config['COLLECTION_METADATA']['extent']['spatial']))
+    stac_config['COLLECTION_METADATA']['extent']['temporal'] = [
                 temporal_extent['earliest'].strftime(STAC_DATE_FORMAT),
                 temporal_extent['latest'].strftime(STAC_DATE_FORMAT),
             ]
-    print('determined temporal extent: {}'.format(STAC_CONFIG['COLLECTION_METADATA']['extent']['temporal']))
+    print('determined temporal extent: {}'.format(stac_config['COLLECTION_METADATA']['extent']['temporal']))
 
     # try to open existing root catalog so we can append to it,
     # otherwise create a new one
-    root_catalog_dir = os.path.join(STAC_CONFIG['OUTPUT_BUCKET_BASE_URL'], STAC_CONFIG['ROOT_CATALOG_DIR'])
+    root_catalog_dir = os.path.join(stac_config['OUTPUT_BUCKET_BASE_URL'], stac_config['ROOT_CATALOG_DIR'])
     root_catalog_url = os.path.join(root_catalog_dir, 'catalog.json')
     try:
         catalog = satstac.Catalog.open(root_catalog_url)
@@ -371,29 +371,29 @@ def main():
     except satstac.thing.STACError:
         print('creating new root catalog')
         catalog = satstac.Catalog.create(
-                  id=STAC_CONFIG['CATALOG_ID'],
-                  description=STAC_CONFIG['CATALOG_DESCRIPTION'],
+                  id=stac_config['CATALOG_ID'],
+                  description=stac_config['CATALOG_DESCRIPTION'],
                   root=root_catalog_dir,
                 )
 
-    collection = satstac.Collection(STAC_CONFIG['COLLECTION_METADATA'])
-    catalog.save_as(os.path.join(TEMP_DIR, STAC_CONFIG['ROOT_CATALOG_DIR'], 'catalog.json'))
+    collection = satstac.Collection(stac_config['COLLECTION_METADATA'])
+    catalog.save_as(os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json'))
     catalog.add_catalog(collection)
 
     for item_dict in item_dicts:
         collection.add_item(satstac.Item(item_dict))
 
-    if not STAC_CONFIG.get('DISABLE_STAC_LINT', False):
-        lint_stac_local(TEMP_DIR)
+    if not stac_config.get('DISABLE_STAC_LINT', False):
+        lint_stac_local(stac_config, temp_dir)
 
     # Comment this out if testing to avoid actually pushing catalog to S3
-    publish_to_s3(TEMP_DIR)
+    publish_to_s3(stac_config, temp_dir)
 
-    if not STAC_CONFIG.get('DISABLE_STAC_LINT', False):
-        lint_uploaded_stac(root_catalog_url)
+    if not stac_config.get('DISABLE_STAC_LINT', False):
+        lint_uploaded_stac(stac_config, root_catalog_url)
 
 
-if __name__ == '__main__':
+def parse_args_and_run():
     default_config_path = "config.json"
     default_temp_dir = '/work'
 
@@ -409,6 +409,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     config_path = args.config
     with open(config_path) as f:
-        STAC_CONFIG = json.loads(f.read())
-    TEMP_DIR = args.tempdir
-    main()
+        stac_config = json.loads(f.read())
+    temp_dir = args.tempdir
+    create_stac_catalog(temp_dir, stac_config)
+
+
+if __name__ == '__main__':
+    parse_args_and_run()
