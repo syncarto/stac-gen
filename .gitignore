@@ -4,3 +4,6 @@ __pycache__
 *.pyc
 .*.swp
 naip_configs
+build/
+dist/
+stac_gen.egg-info/
