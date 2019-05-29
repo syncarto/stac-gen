@@ -285,6 +285,61 @@ def lint_uploaded_stac(stac_config, root_catalog_url):
     assert_valid_stac_lint(output)
 
 
+def validate_cog(url):
+    from validate_cloud_optimized_geotiff import validate
+    # TODO what if if requester pays?
+    vsicurl_url = url.replace('http://', '/vsicurl/').replace('https://', '/vsicurl/')
+    print('checking if valid COG: {}'.format(vsicurl_url))
+    warnings, errors, details = validate(vsicurl_url)
+    if warnings:
+        print('The following warnings were found:')
+        for warning in warnings:
+            print(' - ' + warning)
+    if errors:
+        print('{} is NOT a valid cloud optimized GeoTIFF.'.format(vsicurl_url))
+        print('The following errors were found:')
+        for error in errors:
+            print(' - ' + error)
+        print('')
+        return False
+
+    print('{} is a valid COG'.format(vsicurl_url))
+    return True
+
+
+def convert_to_cog(stac_config, temp_dir, input_url):
+    parts = os.path.basename(input_url).split('.')
+    cog_filename = ''.join(parts[:-1]) + '_COG.TIF'
+    # TODO think about this more
+    s3_key = '{}/{}'.format(stac_config['COLLECTION_METADATA']['id'], cog_filename)
+    cog_url = 's3://{}/{}'.format(stac_config['OUTPUT_BUCKET_NAME'], s3_key)
+
+    # copy file to local
+    input_filename = os.path.join(temp_dir, os.path.basename(input_url))
+    print('downloading file {}'.format(input_filename))
+    cmd = ['aws', 's3', 'cp', input_url, input_filename]
+    print(' '.join(cmd))
+    output = subprocess.check_output(cmd).decode()
+    print(output)
+    print('...download complete')
+
+    output_filename = os.path.join(temp_dir, cog_filename)
+    args = ['rio', 'cogeo', input_filename, output_filename, '--cog-profile', 'deflate']
+    print(' '.join(args))
+    output = subprocess.check_output(args).decode()
+    print(output)
+
+    # upload COG to s3
+    print('uploading {} to {}'.format(output_filename, s3_key))
+    cmd = ['aws', 's3', 'cp', output_filename, cog_url]
+    print(' '.join(cmd))
+    output = subprocess.check_output(cmd).decode()
+    print(output)
+    print('...upload complete')
+
+    return cog_url
+
+
 def create_stac_catalog(temp_dir, stac_config):
     if os.path.isdir(temp_dir):
         shutil.rmtree(temp_dir)
@@ -317,6 +372,14 @@ def create_stac_catalog(temp_dir, stac_config):
             image_url = 's3://{}/{}'.format(stac_config['BUCKET_NAME'], input_key)
         else:
             image_url = stac_config['BUCKET_BASE_URL'] + input_key
+
+        is_valid_cog = validate_cog(image_url)
+        if not is_valid_cog and stac_config.get('ALLOW_COG_CONVERSION', False):
+            cog_image_url = convert_to_cog(stac_config, temp_dir, image_url)
+
+            # create the stac item pointing to the COG
+            # TODO also reference the original file in assets?
+            image_url = cog_image_url
 
         with rasterio.open(image_url, 'r') as raster_file:
             bounds = raster_file.bounds
