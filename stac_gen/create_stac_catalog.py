@@ -153,6 +153,13 @@ def update_spatial_extent(extent, new_bounds):
 
 
 def update_temporal_extent(extent, datetime_obj):
+    try:
+        # convert if needed
+        datetime_obj = datetime.strptime(datetime_obj, STAC_DATE_FORMAT)
+    except:
+        # already datetime
+        pass
+
     if (extent['earliest'] is None) or (datetime_obj < extent['earliest']):
         extent['earliest'] = datetime_obj
     if (extent['latest'] is None) or (datetime_obj > extent['latest']):
@@ -290,7 +297,10 @@ def validate_cog(url):
     # TODO what if if requester pays?
     vsicurl_url = url.replace('http://', '/vsicurl/').replace('https://', '/vsicurl/')
     print('checking if valid COG: {}'.format(vsicurl_url))
+    t0 = time.time()
     warnings, errors, details = validate(vsicurl_url)
+    # XXX argh this is way too slow, like 3sec per tif, at least from laptop
+    print('time to run validate_cloud_optimized_geotiff: {}sec'.format(time.time()-t0))
     if warnings:
         print('The following warnings were found:')
         for warning in warnings:
