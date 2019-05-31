@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 import argparse
 import time
+import urllib.request
 
 import boto3
 import rasterio
@@ -293,14 +294,23 @@ def lint_uploaded_stac(stac_config, root_catalog_url):
 
 
 def validate_cog(url):
-    from validate_cloud_optimized_geotiff import validate
+    from validate_cloud_optimized_geotiff import validate, ValidateCloudOptimizedGeoTIFFException
     # TODO what if if requester pays?
     vsicurl_url = url.replace('http://', '/vsicurl/').replace('https://', '/vsicurl/')
+
     print('checking if valid COG: {}'.format(vsicurl_url))
     t0 = time.time()
-    warnings, errors, details = validate(vsicurl_url)
+    try:
+        warnings, errors, details = validate(vsicurl_url)
+    except ValidateCloudOptimizedGeoTIFFException as e:
+        # this exception gets thrown in case of e.g. a jp2 file that we can still convert
+        print(str(e))
+        print('got ValidateCloudOptimizedGeoTIFFException exception; assuming file needs conversion')
+        return False
+
     # XXX argh this is way too slow, like 3sec per tif, at least from laptop
     print('time to run validate_cloud_optimized_geotiff: {}sec'.format(time.time()-t0))
+
     if warnings:
         print('The following warnings were found:')
         for warning in warnings:
@@ -329,12 +339,16 @@ def convert_to_cog(stac_config, temp_dir, input_url):
     print('downloading file {}'.format(input_filename))
     cmd = ['aws', 's3', 'cp', input_url, input_filename]
     print(' '.join(cmd))
-    output = subprocess.check_output(cmd).decode()
-    print(output)
+    try:
+        output = subprocess.check_output(cmd).decode()
+        print(output)
+    except:
+        print('retrying {} with urlretrieve'.format(input_url))
+        urllib.request.urlretrieve(input_url, input_filename)
     print('...download complete')
 
     output_filename = os.path.join(temp_dir, cog_filename)
-    args = ['rio', 'cogeo', input_filename, output_filename, '--cog-profile', 'deflate']
+    args = ['rio', 'cogeo', 'create', input_filename, output_filename, '--cog-profile', 'deflate']
     print(' '.join(args))
     output = subprocess.check_output(args).decode()
     print(output)
