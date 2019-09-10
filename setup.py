@@ -11,7 +11,7 @@ setup(name='stac-gen',
       install_requires=[
                 'boto3',
                 'rasterio',
-                'sat-stac',
+                'sat-stac==0.1.3',
                 'shapely',
                 'stac-validator',
           ],
