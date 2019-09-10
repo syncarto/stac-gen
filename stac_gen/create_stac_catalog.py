@@ -502,7 +502,10 @@ def create_stac_catalog(temp_dir, stac_config):
     try:
         catalog = satstac.Catalog.open(root_catalog_url)
         print('successfully opened existing root catalog at {}'.format(root_catalog_url))
-    except satstac.thing.STACError:
+    # Can't just catch STACError b/c satstac tries to make a signed s3 url if the original
+    # url fails, but parses the URL wrong which ultimately causes an SSLError
+    # except satstac.thing.STACError:
+    except:
         print('creating new root catalog')
         catalog = satstac.Catalog.create(
                   id=stac_config['CATALOG_ID'],
