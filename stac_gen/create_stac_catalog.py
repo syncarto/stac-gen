@@ -443,6 +443,10 @@ def create_stac_catalog(temp_dir, stac_config):
             # create the stac item pointing to the COG
             # TODO also reference the original file in assets?
             image_url = cog_image_url
+        elif not is_valid_cog:
+            print('{} is invalid COG but automatic COG conversion disabled; enable with ALLOW_COG_CONVERSION'.format(image_url))
+        elif is_valid_cog:
+            print('{} is a valid COG'.format(image_url))
 
         with rasterio.open(image_url, 'r') as raster_file:
             bounds = raster_file.bounds
@@ -474,6 +478,9 @@ def create_stac_catalog(temp_dir, stac_config):
             pass
 
     # update collection metadata with max bounds discovered from all rasters
+    if 'extent' not in stac_config['COLLECTION_METADATA']:
+        stac_config['COLLECTION_METADATA']['extent'] = {}
+
     stac_config['COLLECTION_METADATA']['extent']['spatial'] = [
                 spatial_extent['left'],
                 spatial_extent['bottom'],
@@ -481,6 +488,7 @@ def create_stac_catalog(temp_dir, stac_config):
                 spatial_extent['top'],
             ]
     print('determined spatial extent: {}'.format(stac_config['COLLECTION_METADATA']['extent']['spatial']))
+
     stac_config['COLLECTION_METADATA']['extent']['temporal'] = [
                 temporal_extent['earliest'].strftime(STAC_DATE_FORMAT),
                 temporal_extent['latest'].strftime(STAC_DATE_FORMAT),
