@@ -397,6 +397,9 @@ def validate_stac_config(stac_config):
                 stac_config['OUTPUT_BUCKET_REGION']
             )
 
+    if not stac_config.get('S3_KEY_TO_IMAGE_ID', None):
+        stac_config['S3_KEY_TO_IMAGE_ID'] = 'GENERIC_IMAGE_ID_FUNCTION'
+
 
 def create_stac_catalog(temp_dir, stac_config):
     if os.path.isdir(temp_dir):
