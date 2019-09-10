@@ -365,18 +365,37 @@ def convert_to_cog(stac_config, temp_dir, input_url):
     return cog_url
 
 
+def build_https_url_from_bucket_name(bucket_name, bucket_region):
+    return 'https://s3.{bucket_region}.amazonaws.com/{bucket_name}/'.format(
+                bucket_region=bucket_region,
+                bucket_name=bucket_name,
+            )
+
+
 def validate_stac_config(stac_config):
     """ Place to make sure optional params are set to reasonable defaults,
         optional id's are generated automatically, bail if required params
         aren't present, etc.
     """
     # generate catalog/collection id's if not present
-    if not stac_config.get('id', None):
-        stac_config['id'] = str(uuid.uuid4())
+    if not stac_config.get('CATALOG_ID', None):
+        stac_config['CATALOG_ID'] = str(uuid.uuid4())
 
     if not stac_config['COLLECTION_METADATA'].get('id', None):
         # NOTE this is used as part of s3 key path due to sat-stac implementation
         stac_config['COLLECTION_METADATA']['id'] = str(uuid.uuid4())
+
+    if not stac_config.get('BUCKET_BASE_URL', None):
+        stac_config['BUCKET_BASE_URL'] = build_https_url_from_bucket_name(
+                stac_config['BUCKET_NAME'],
+                stac_config['BUCKET_REGION']
+            )
+
+    if not stac_config.get('OUTPUT_BUCKET_BASE_URL', None):
+        stac_config['OUTPUT_BUCKET_BASE_URL'] = build_https_url_from_bucket_name(
+                stac_config['OUTPUT_BUCKET_NAME'],
+                stac_config['OUTPUT_BUCKET_REGION']
+            )
 
 
 def create_stac_catalog(temp_dir, stac_config):
