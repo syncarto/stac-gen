@@ -2,6 +2,6 @@ awscli
 boto3
 rasterio
 rio-cogeo
-sat-stac
+git+https://github.com/mhiley/sat-stac.git@fix-s3-self-urls
 shapely
 stac-validator
