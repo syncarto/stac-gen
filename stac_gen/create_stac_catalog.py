@@ -295,7 +295,7 @@ def lint_uploaded_stac(stac_config, root_catalog_url):
 
 
 def validate_cog(url):
-    from validate_cloud_optimized_geotiff import validate, ValidateCloudOptimizedGeoTIFFException
+    from .validate_cloud_optimized_geotiff import validate, ValidateCloudOptimizedGeoTIFFException
     # TODO what if if requester pays?
     vsicurl_url = url.replace('http://', '/vsicurl/').replace('https://', '/vsicurl/')
 
