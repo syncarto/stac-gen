@@ -8,6 +8,7 @@ import json
 import argparse
 import time
 import urllib.request
+import uuid
 
 import boto3
 import rasterio
@@ -364,10 +365,26 @@ def convert_to_cog(stac_config, temp_dir, input_url):
     return cog_url
 
 
+def validate_stac_config(stac_config):
+    """ Place to make sure optional params are set to reasonable defaults,
+        optional id's are generated automatically, bail if required params
+        aren't present, etc.
+    """
+    # generate catalog/collection id's if not present
+    if not stac_config.get('id', None):
+        stac_config['id'] = str(uuid.uuid4())
+
+    if not stac_config['COLLECTION_METADATA'].get('id', None):
+        # NOTE this is used as part of s3 key path due to sat-stac implementation
+        stac_config['COLLECTION_METADATA']['id'] = str(uuid.uuid4())
+
+
 def create_stac_catalog(temp_dir, stac_config):
     if os.path.isdir(temp_dir):
         shutil.rmtree(temp_dir)
     os.makedirs(temp_dir)
+
+    validate_stac_config(stac_config)
 
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(stac_config['BUCKET_NAME'])
