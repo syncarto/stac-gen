@@ -478,7 +478,7 @@ def create_stac_catalog(temp_dir, stac_config):
             pass
 
     # update collection metadata with max bounds discovered from all rasters
-    if 'extent' not in stac_config['COLLECTION_METADATA']:
+    if not stac_config['COLLECTION_METADATA'].get('extent', None):
         stac_config['COLLECTION_METADATA']['extent'] = {}
 
     stac_config['COLLECTION_METADATA']['extent']['spatial'] = [
