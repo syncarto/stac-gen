@@ -529,6 +529,9 @@ def create_stac_catalog(temp_dir, stac_config):
     if not stac_config.get('DISABLE_STAC_LINT', False):
         lint_uploaded_stac(stac_config, root_catalog_url)
 
+    # return final params so library user can update db, etc.
+    return stac_config
+
 
 def parse_args_and_run():
     default_config_path = "config.json"
