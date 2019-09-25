@@ -63,7 +63,7 @@ def create_item(stac_config, image_id, image_url, bounds, epsg):
              'geometry': shapely.geometry.mapping(shapely.geometry.box(*bounds)),
              'properties': {
                  'datetime': stac_config.get('ITEM_TIMESTAMP', None),
-                 'collection': stac_config.get('ITEM_COLLECTION_PROPERTY', stac_config['CATALOG_ID']),
+                 'collection': stac_config.get('ITEM_COLLECTION_PROPERTY', stac_config['COLLECTION_METADATA']['id']),
                  'eo:epsg': epsg,
              },
              'assets': {
