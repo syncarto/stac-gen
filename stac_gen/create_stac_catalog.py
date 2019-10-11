@@ -9,6 +9,7 @@ import argparse
 import time
 import urllib.request
 import uuid
+import re
 
 import boto3
 import rasterio
@@ -441,6 +442,28 @@ def get_initial_temporal_extent(collection):
     return extent
 
 
+def add_footprint_id_to_item(stac_config, input_key, item_dict):
+    if 'FOOTPRINT_REGEX' not in stac_config:
+        return
+
+    regex = stac_config['FOOTPRINT_REGEX']
+    filename = os.path.basename(input_key)
+    m = re.search(regex, filename)
+
+    if m is None:
+        print('regex {} did not match {}'.format(regex, filename))
+        return
+
+    try:
+        footprint_id = m.group('footprint')
+    except IndexError:
+        print('regex {} matched {} but did not a "footprint" group'.format(regex, filename))
+        return
+
+    print('extracted footprint id from filename: {}'.format(footprint_id))
+    item_dict['properties']['footprint_id'] = footprint_id
+
+
 def create_stac_catalog(temp_dir, stac_config):
     if os.path.isdir(temp_dir):
         shutil.rmtree(temp_dir)
@@ -505,6 +528,7 @@ def create_stac_catalog(temp_dir, stac_config):
                 epsg = raster_file.crs.to_epsg()
 
             item_dict = create_item(stac_config, image_id, image_url, bounds_geo, epsg)
+            add_footprint_id_to_item(stac_config, input_key, item_dict)
             item_dicts.append(item_dict)
 
         if 'S3_KEY_TO_FGDC_S3_KEY' in stac_config:
