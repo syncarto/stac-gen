@@ -401,6 +401,46 @@ def validate_stac_config(stac_config):
         stac_config['S3_KEY_TO_IMAGE_ID'] = 'GENERIC_IMAGE_ID_FUNCTION'
 
 
+def get_initial_spatial_extent(collection):
+    try:
+        initial = collection.data['extent']['spatial']
+        print('returning existing initial spatial extent')
+        extent = {
+                    'left': initial[0],
+                    'bottom': initial[1],
+                    'right': initial[2],
+                    'top': initial[3],
+                }
+    except:
+        print('returning empty initial spatial extent')
+        extent = {
+                    'left': float('inf'),
+                    'bottom': float('inf'),
+                    'right': float('-inf'),
+                    'top': float('-inf'),
+                }
+    print('initial spatial extent: {}'.format(extent))
+    return extent
+
+
+def get_initial_temporal_extent(collection):
+    try:
+        initial = collection.data['extent']['temporal']
+        print('returning existing initial temporal extent')
+        extent = {
+                    'earliest': datetime.strptime(initial[0], STAC_DATE_FORMAT),
+                    'latest': datetime.strptime(initial[1], STAC_DATE_FORMAT),
+                }
+    except:
+        print('returning empty initial temporal extent')
+        extent = {
+                    'earliest': None,
+                    'latest': None,
+                }
+    print('initial temporal extent: {}'.format(extent))
+    return extent
+
+
 def create_stac_catalog(temp_dir, stac_config):
     if os.path.isdir(temp_dir):
         shutil.rmtree(temp_dir)
@@ -415,16 +455,19 @@ def create_stac_catalog(temp_dir, stac_config):
     input_keys = [f for f in input_keys if f.endswith(stac_config['COG_SUFFIX'])]
 
     item_dicts = []
-    spatial_extent = {
-                'left': float('inf'),
-                'bottom': float('inf'),
-                'right': float('-inf'),
-                'top': float('-inf'),
-            }
-    temporal_extent = {
-                'earliest': None,
-                'latest': None,
-            }
+
+    collection_dir = os.path.join(stac_config['OUTPUT_BUCKET_BASE_URL'], stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'])
+    collection_url = os.path.join(collection_dir, 'catalog.json')
+    try:
+        collection = satstac.Collection.open(collection_url)
+        print('successfully opened existing collection at {}'.format(collection_url))
+    except:
+        print('creating new collection')
+        collection = satstac.Collection(stac_config['COLLECTION_METADATA'])
+
+    spatial_extent = get_initial_spatial_extent(collection)
+    temporal_extent = get_initial_temporal_extent(collection)
+
     for input_key in input_keys:
 
         if stac_config.get('REQUESTER_PAYS', False):
@@ -513,7 +556,6 @@ def create_stac_catalog(temp_dir, stac_config):
                   root=root_catalog_dir,
                 )
 
-    collection = satstac.Collection(stac_config['COLLECTION_METADATA'])
     catalog.save_as(os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json'))
     catalog.add_catalog(collection)
 
