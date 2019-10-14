@@ -443,7 +443,7 @@ def get_initial_temporal_extent(collection):
 
 
 def add_footprint_id_to_item(stac_config, input_key, item_dict):
-    if 'FOOTPRINT_REGEX' not in stac_config:
+    if 'FILENAME_REGEX' not in stac_config:
         return
 
     regex = stac_config['FILENAME_REGEX']
