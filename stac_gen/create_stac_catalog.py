@@ -446,7 +446,7 @@ def add_footprint_id_to_item(stac_config, input_key, item_dict):
     if 'FOOTPRINT_REGEX' not in stac_config:
         return
 
-    regex = stac_config['FOOTPRINT_REGEX']
+    regex = stac_config['FILENAME_REGEX']
     filename = os.path.basename(input_key)
     m = re.search(regex, filename)
 
