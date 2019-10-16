@@ -581,10 +581,16 @@ def create_stac_catalog(temp_dir, stac_config):
                 )
 
     catalog.save_as(os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json'))
+
     catalog.add_catalog(collection)
 
     for item_dict in item_dicts:
         collection.add_item(satstac.Item(item_dict))
+
+    collection.data['extent']['spatial'] = stac_config['COLLECTION_METADATA']['extent']['spatial']
+    collection.data['extent']['temporal'] = stac_config['COLLECTION_METADATA']['extent']['temporal']
+
+    collection.save()
 
     if not stac_config.get('DISABLE_STAC_LINT', False):
         lint_stac_local(stac_config, temp_dir)
