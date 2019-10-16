@@ -562,6 +562,9 @@ def create_stac_catalog(temp_dir, stac_config):
             ]
     print('determined temporal extent: {}'.format(stac_config['COLLECTION_METADATA']['extent']['temporal']))
 
+    collection.data['extent']['spatial'] = stac_config['COLLECTION_METADATA']['extent']['spatial']
+    collection.data['extent']['temporal'] = stac_config['COLLECTION_METADATA']['extent']['temporal']
+
     # try to open existing root catalog so we can append to it,
     # otherwise create a new one
     root_catalog_dir = os.path.join(stac_config['OUTPUT_BUCKET_BASE_URL'], stac_config['ROOT_CATALOG_DIR'])
@@ -586,11 +589,6 @@ def create_stac_catalog(temp_dir, stac_config):
 
     for item_dict in item_dicts:
         collection.add_item(satstac.Item(item_dict))
-
-    collection.data['extent']['spatial'] = stac_config['COLLECTION_METADATA']['extent']['spatial']
-    collection.data['extent']['temporal'] = stac_config['COLLECTION_METADATA']['extent']['temporal']
-
-    collection.save()
 
     if not stac_config.get('DISABLE_STAC_LINT', False):
         lint_stac_local(stac_config, temp_dir)
