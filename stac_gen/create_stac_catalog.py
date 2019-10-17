@@ -481,9 +481,11 @@ def create_stac_catalog(temp_dir, stac_config):
 
     collection_dir = os.path.join(stac_config['OUTPUT_BUCKET_BASE_URL'], stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'])
     collection_url = os.path.join(collection_dir, 'catalog.json')
+    collection_already_exists = False
     try:
         collection = satstac.Collection.open(collection_url)
         print('successfully opened existing collection at {}'.format(collection_url))
+        collection_already_exists = True
     except:
         print('creating new collection')
         collection = satstac.Collection(stac_config['COLLECTION_METADATA'])
@@ -565,6 +567,11 @@ def create_stac_catalog(temp_dir, stac_config):
     collection.data['extent']['spatial'] = stac_config['COLLECTION_METADATA']['extent']['spatial']
     collection.data['extent']['temporal'] = stac_config['COLLECTION_METADATA']['extent']['temporal']
 
+    if collection_already_exists:
+        # so that changes to collection are written to disk instead of trying
+        # to write to remote url...
+        collection.save_as(os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json'))
+
     # try to open existing root catalog so we can append to it,
     # otherwise create a new one
     root_catalog_dir = os.path.join(stac_config['OUTPUT_BUCKET_BASE_URL'], stac_config['ROOT_CATALOG_DIR'])
@@ -585,7 +592,10 @@ def create_stac_catalog(temp_dir, stac_config):
 
     catalog.save_as(os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json'))
 
-    catalog.add_catalog(collection)
+    if not collection_already_exists:
+        # only if collection not already linked to root catalog; otherwise
+        # the collections initial list of links is cleared out
+        catalog.add_catalog(collection)
 
     for item_dict in item_dicts:
         collection.add_item(satstac.Item(item_dict))
