@@ -576,6 +576,8 @@ def create_stac_catalog(temp_dir, stac_config):
     # otherwise create a new one
     root_catalog_dir = os.path.join(stac_config['OUTPUT_BUCKET_BASE_URL'], stac_config['ROOT_CATALOG_DIR'])
     root_catalog_url = os.path.join(root_catalog_dir, 'catalog.json')
+    # need to return this to user for sat-api ingest
+    stac_config['ROOT_CATALOG_URL'] = root_catalog_url
     try:
         catalog = satstac.Catalog.open(root_catalog_url)
         print('successfully opened existing root catalog at {}'.format(root_catalog_url))
