@@ -133,7 +133,11 @@ def get_s3_listing(stac_config):
 
 
 def download_s3_file(bucket, key, filename, requester_pays=False):
-    s3_url = 's3://{}/{}'.format(bucket, key)
+    s3_url = 's3://{}/{}'.format(bucket.name, key)
+
+    filedir = os.path.dirname(filename)
+    if not os.path.isdir(filedir):
+        os.makedirs(filedir)
 
     print("Downloading {} to {}".format(s3_url, filename))
     if requester_pays:
@@ -503,13 +507,13 @@ def create_stac_catalog(temp_dir, stac_config):
         if collection_url.startswith('s3://'):
             collection_filename = os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json')
             s3_key = os.path.join(stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json')
-            download_s3_file(stac_config['OUTPUT_BUCKET_NAME'], s3_key, collection_filename, stac_config.get('REQUESTER_PAYS', False))
+            download_s3_file(s3.Bucket(stac_config['OUTPUT_BUCKET_NAME']), s3_key, collection_filename, stac_config.get('REQUESTER_PAYS', False))
             collection = satstac.Collection.open(collection_filename)
-            collection_already_exists = True
         else:
             collection = satstac.Collection.open(collection_url)
-            print('successfully opened existing collection at {}'.format(collection_url))
-            collection_already_exists = True
+
+        print('successfully opened existing collection at {}'.format(collection_url))
+        collection_already_exists = True
     except:
         print('creating new collection')
         collection = satstac.Collection(stac_config['COLLECTION_METADATA'])
