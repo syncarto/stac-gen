@@ -607,7 +607,13 @@ def create_stac_catalog(temp_dir, stac_config):
     # need to return this to user for sat-api ingest
     stac_config['ROOT_CATALOG_URL'] = root_catalog_url
     try:
-        catalog = satstac.Catalog.open(root_catalog_url)
+        if root_catalog_url.startswith('s3://'):
+            catalog_filename = os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json')
+            s3_key = os.path.join(stac_config['ROOT_CATALOG_DIR'], 'catalog.json')
+            download_s3_file(s3.Bucket(stac_config['OUTPUT_BUCKET_NAME']), s3_key, catalog_filename, stac_config.get('REQUESTER_PAYS', False))
+            catalog = satstac.Collection.open(catalog_filename)
+        else:
+            catalog = satstac.Catalog.open(root_catalog_url)
         print('successfully opened existing root catalog at {}'.format(root_catalog_url))
     # Can't just catch STACError b/c satstac tries to make a signed s3 url if the original
     # url fails, but parses the URL wrong which ultimately causes an SSLError
