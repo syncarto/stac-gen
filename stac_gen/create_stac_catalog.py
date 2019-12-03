@@ -373,6 +373,12 @@ def build_https_url_from_bucket_name(bucket_name, bucket_region):
             )
 
 
+def build_s3_url_from_bucket_name(bucket_name):
+    return 's3://{bucket_name}/'.format(
+                bucket_name=bucket_name,
+            )
+
+
 def validate_stac_config(stac_config):
     """ Place to make sure optional params are set to reasonable defaults,
         optional id's are generated automatically, bail if required params
@@ -386,17 +392,28 @@ def validate_stac_config(stac_config):
         # NOTE this is used as part of s3 key path due to sat-stac implementation
         stac_config['COLLECTION_METADATA']['id'] = str(uuid.uuid4())
 
-    if not stac_config.get('BUCKET_BASE_URL', None):
-        stac_config['BUCKET_BASE_URL'] = build_https_url_from_bucket_name(
-                stac_config['BUCKET_NAME'],
-                stac_config['BUCKET_REGION']
-            )
+    if not stac_config.get('REQUESTER_PAYS', False):
+        if not stac_config.get('BUCKET_BASE_URL', None):
+            stac_config['BUCKET_BASE_URL'] = build_https_url_from_bucket_name(
+                    stac_config['BUCKET_NAME'],
+                    stac_config['BUCKET_REGION']
+                )
 
-    if not stac_config.get('OUTPUT_BUCKET_BASE_URL', None):
-        stac_config['OUTPUT_BUCKET_BASE_URL'] = build_https_url_from_bucket_name(
-                stac_config['OUTPUT_BUCKET_NAME'],
-                stac_config['OUTPUT_BUCKET_REGION']
-            )
+        if not stac_config.get('OUTPUT_BUCKET_BASE_URL', None):
+            stac_config['OUTPUT_BUCKET_BASE_URL'] = build_https_url_from_bucket_name(
+                    stac_config['OUTPUT_BUCKET_NAME'],
+                    stac_config['OUTPUT_BUCKET_REGION']
+                )
+    else:
+        if not stac_config.get('BUCKET_BASE_URL', None):
+            stac_config['BUCKET_BASE_URL'] = build_s3_url_from_bucket_name(
+                    stac_config['BUCKET_NAME']
+                )
+
+        if not stac_config.get('OUTPUT_BUCKET_BASE_URL', None):
+            stac_config['OUTPUT_BUCKET_BASE_URL'] = build_s3_url_from_bucket_name(
+                    stac_config['OUTPUT_BUCKET_NAME']
+                )
 
     if not stac_config.get('S3_KEY_TO_IMAGE_ID', None):
         stac_config['S3_KEY_TO_IMAGE_ID'] = 'GENERIC_IMAGE_ID_FUNCTION'
