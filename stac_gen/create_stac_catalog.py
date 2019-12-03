@@ -500,9 +500,16 @@ def create_stac_catalog(temp_dir, stac_config):
     collection_url = os.path.join(collection_dir, 'catalog.json')
     collection_already_exists = False
     try:
-        collection = satstac.Collection.open(collection_url)
-        print('successfully opened existing collection at {}'.format(collection_url))
-        collection_already_exists = True
+        if collection_url.startswith('s3://'):
+            collection_filename = os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json')
+            s3_key = os.path.join(stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json')
+            download_s3_file(stac_config['OUTPUT_BUCKET_NAME'], s3_key, collection_filename, stac_config.get('REQUESTER_PAYS', False))
+            collection = satstac.Collection.open(collection_filename)
+            collection_already_exists = True
+        else:
+            collection = satstac.Collection.open(collection_url)
+            print('successfully opened existing collection at {}'.format(collection_url))
+            collection_already_exists = True
     except:
         print('creating new collection')
         collection = satstac.Collection(stac_config['COLLECTION_METADATA'])
