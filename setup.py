@@ -7,7 +7,7 @@ setup(name='stac-gen',
       author='Michael Hiley',
       author_email='hiley@syncarto.com',
       license='MIT',
-      packages=['stac_gen'],
+      packages=['stac_gen', 'stac_gen.satstac'],
       install_requires=[
                 'boto3',
                 'rasterio',
