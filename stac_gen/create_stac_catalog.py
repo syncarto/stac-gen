@@ -345,14 +345,13 @@ def validate_cog(url):
 def convert_to_cog(stac_config, temp_dir, input_url):
     parts = os.path.basename(input_url).split('.')
     cog_filename = ''.join(parts[:-1]) + '_COG.TIF'
-    # TODO think about this more
-    s3_key = '{}/{}'.format(stac_config['COLLECTION_METADATA']['id'], cog_filename)
+    s3_key = '{}/{}/{}'.format(stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], cog_filename)
     cog_url = 's3://{}/{}'.format(stac_config['OUTPUT_BUCKET_NAME'], s3_key)
 
     # copy file to local
     input_filename = os.path.join(temp_dir, os.path.basename(input_url))
     print('downloading file {}'.format(input_filename))
-    cmd = ['aws', 's3', 'cp', input_url, input_filename]
+    cmd = ['aws', 's3', 'cp', '--quiet', input_url, input_filename]
     print(' '.join(cmd))
     try:
         output = subprocess.check_output(cmd).decode()
@@ -370,7 +369,7 @@ def convert_to_cog(stac_config, temp_dir, input_url):
 
     # upload COG to s3
     print('uploading {} to {}'.format(output_filename, s3_key))
-    cmd = ['aws', 's3', 'cp', output_filename, cog_url]
+    cmd = ['aws', 's3', 'cp', '--quiet', output_filename, cog_url]
     print(' '.join(cmd))
     output = subprocess.check_output(cmd).decode()
     print(output)
