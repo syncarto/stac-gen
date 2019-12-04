@@ -9,6 +9,7 @@ setup(name='stac-gen',
       license='MIT',
       packages=['stac_gen', 'stac_gen.satstac'],
       install_requires=[
+                'awscli',
                 'boto3',
                 'rasterio',
                 'shapely',
