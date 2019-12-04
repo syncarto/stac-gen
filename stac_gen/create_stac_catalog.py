@@ -15,7 +15,7 @@ import boto3
 import rasterio
 import rasterio.warp
 import shapely.geometry
-import satstac
+from . import satstac
 
 
 STAC_DATE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'

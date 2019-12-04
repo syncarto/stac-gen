@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 
 from .catalog import Catalog
-from satstac import STACError, utils
+from . import STACError, utils
 
 logger = logging.getLogger(__name__)
 

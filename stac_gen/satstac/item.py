@@ -7,7 +7,7 @@ from string import Formatter, Template
 from datetime import datetime
 from dateutil.parser import parse as dateparse
 
-from satstac import __version__, STACError, Thing, utils
+from . import __version__, STACError, Thing, utils
 
 
 logger = logging.getLogger(__name__)
