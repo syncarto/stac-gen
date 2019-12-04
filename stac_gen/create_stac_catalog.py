@@ -301,8 +301,17 @@ def lint_uploaded_stac(stac_config, root_catalog_url):
 
 def validate_cog(url):
     from .validate_cloud_optimized_geotiff import validate, ValidateCloudOptimizedGeoTIFFException
-    # TODO what if if requester pays?
-    vsicurl_url = url.replace('http://', '/vsicurl/').replace('https://', '/vsicurl/')
+
+    if url.startswith('http'):
+        # see https://github.com/Toblerity/Fiona/issues/573
+        # some versions of gdal require including https:// in url
+        vsicurl_url = '/vsicurl/' + url
+    elif url.startswith('s3://'):
+        vsicurl_url = url.replace('s3://', '/vsis3/')
+    else:
+        raise ValueError('invalid protocol: {}'.format(url))
+
+    os.environ['AWS_REQUEST_PAYER'] = 'requester'
 
     print('checking if valid COG: {}'.format(vsicurl_url))
     t0 = time.time()
