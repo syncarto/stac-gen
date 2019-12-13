@@ -55,7 +55,7 @@ config_to_function_map = {
 
 def create_item(stac_config, image_id, image_url, bounds, epsg):
     item = {
-             'id': image_id,
+             'id': str(uuid.uuid4()), # must be global across elasticsearch items index
              'type': 'Feature',
              # have [ left, bottom, right, top ]
              # want [ lower left lon, lower left lat, upper right lon, upper right lat ]
