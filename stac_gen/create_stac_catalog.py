@@ -54,8 +54,13 @@ config_to_function_map = {
 
 
 def create_item(stac_config, image_id, image_url, bounds, epsg):
+    collection_id = stac_config.get('ITEM_COLLECTION_PROPERTY', stac_config['COLLECTION_METADATA']['id'])
     item = {
-             'id': str(uuid.uuid4()), # must be global across elasticsearch items index
+             # item id must be deterministic so that importing the same item over and over
+             # doesn't create multiple Elasticsearch records, but also needs to include collection id so that
+             # importing the same item into a second collection doesn't overwrite the record for
+             # the first collection.
+             'id': '{}-{}'.format(collection_id, image_id),
              'type': 'Feature',
              # have [ left, bottom, right, top ]
              # want [ lower left lon, lower left lat, upper right lon, upper right lat ]
@@ -64,7 +69,7 @@ def create_item(stac_config, image_id, image_url, bounds, epsg):
              'geometry': shapely.geometry.mapping(shapely.geometry.box(*bounds)),
              'properties': {
                  'datetime': stac_config.get('ITEM_TIMESTAMP', None),
-                 'collection': stac_config.get('ITEM_COLLECTION_PROPERTY', stac_config['COLLECTION_METADATA']['id']),
+                 'collection': collection_id,
                  'eo:epsg': epsg,
              },
              'assets': {
