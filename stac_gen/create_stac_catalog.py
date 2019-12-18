@@ -545,17 +545,27 @@ def create_stac_catalog(temp_dir, stac_config):
         else:
             image_url = stac_config['BUCKET_BASE_URL'] + input_key
 
-        is_valid_cog = validate_cog(image_url)
-        if not is_valid_cog and stac_config.get('ALLOW_COG_CONVERSION', False):
-            cog_image_url = convert_to_cog(stac_config, temp_dir, image_url)
+        auto_cog_option = stac_config.get('AUTO_COG_CONVERT', None)
+        assert auto_cog_option in ('disable', 'allow_if_needed', 'force')
 
-            # create the stac item pointing to the COG
-            # TODO also reference the original file in assets?
-            image_url = cog_image_url
-        elif not is_valid_cog:
-            print('{} is invalid COG but automatic COG conversion disabled; enable with ALLOW_COG_CONVERSION'.format(image_url))
-        elif is_valid_cog:
-            print('{} is a valid COG'.format(image_url))
+        if auto_cog_option in ('allow_if_needed', 'force'):
+            if auto_cog_option == 'force':
+                is_valid_cog = False
+                print('forcing COG conversion')
+            else:
+                print('running validate_cog on {}'.format(image_url))
+                is_valid_cog = validate_cog(image_url)
+                print('result of validate_cog: {}'.format(is_valid_cog))
+
+            if not is_valid_cog:
+                print('running convert_to_cog on {}'.format(image_url))
+                cog_image_url = convert_to_cog(stac_config, temp_dir, image_url)
+
+                # create the stac item pointing to the COG
+                # TODO also reference the original file in assets?
+                image_url = cog_image_url
+        elif auto_cog_option == 'disable':
+            print('auto COG conversion is disabled')
 
         with rasterio.open(image_url, 'r') as raster_file:
             bounds = raster_file.bounds
