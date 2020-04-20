@@ -39,6 +39,15 @@ docker run --rm -it --name stac-gen-1 \
   stac-gen \
   python3 stac_gen/create_stac_catalog.py --config naip_config.json
 ```
+Alternatively, you can build and create the container with the docker-compose command: 
+
+``` 
+docker-compose up
+```
+-- Then the container can be accessed with:
+```
+$ docker exec -it stac-gen-1 /bin/bash
+```
 
 # Config file details
 
