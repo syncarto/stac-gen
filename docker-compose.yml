@@ -1,0 +1,25 @@
+version: '3'
+services:
+  stac-gen-1:
+    build: .
+    hostname: 'stac-gen-1'
+    container_name: stac-gen-1
+    volumes:
+        - './credentials:/root/.aws/credentials'
+        - '.:/code'
+    environment:
+        - AWS_CREDENTIAL_FILE=/root/.aws/credentials
+        - AWS_PROFILE=default
+        - AWS_REQUEST_PAYER=
+    entrypoint: ./entry-start.sh 
+    #command: python3 stac_gen/create_stac_catalog.py --config naip_config.json
+    ports:
+      - '3000:3000'
+    networks:
+      - app
+    #image: stac_gen/create_stac_catalog.py
+networks:
+  app:
+    driver: bridge
+
+

@@ -15,7 +15,7 @@ import boto3
 import rasterio
 import rasterio.warp
 import shapely.geometry
-from . import satstac
+import satstac
 
 
 STAC_DATE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
@@ -497,8 +497,13 @@ def add_footprint_id_to_item(stac_config, input_key, item_dict):
     print('extracted footprint id from filename: {}'.format(footprint_id))
     item_dict['properties']['footprint_id'] = footprint_id
 
+def progress_print_callback(progress, message):
+    print(message)
+    print(progress)
 
-def create_stac_catalog(temp_dir, stac_config):
+
+
+def create_stac_catalog(temp_dir, stac_config,progress_callback):
     if os.path.isdir(temp_dir):
         shutil.rmtree(temp_dir)
     os.makedirs(temp_dir)
@@ -533,6 +538,7 @@ def create_stac_catalog(temp_dir, stac_config):
 
     spatial_extent = get_initial_spatial_extent(collection)
     temporal_extent = get_initial_temporal_extent(collection)
+    progress_callback(0, "Starting conversions...")
 
     for input_key in input_keys:
 
@@ -597,6 +603,7 @@ def create_stac_catalog(temp_dir, stac_config):
             # This is an expected failure if datetime is already a string from config
             pass
 
+    progress_callback(50, "Conversions complete... ")
     # update collection metadata with max bounds discovered from all rasters
     if not stac_config['COLLECTION_METADATA'].get('extent', None):
         stac_config['COLLECTION_METADATA']['extent'] = {}
@@ -668,6 +675,8 @@ def create_stac_catalog(temp_dir, stac_config):
     if not stac_config.get('DISABLE_STAC_LINT', False):
         lint_uploaded_stac(stac_config, root_catalog_url)
 
+    progress_callback(100, "Uploads complete... ")
+
     # return final params so library user can update db, etc.
     return stac_config
 
@@ -690,7 +699,7 @@ def parse_args_and_run():
     with open(config_path) as f:
         stac_config = json.loads(f.read())
     temp_dir = args.tempdir
-    create_stac_catalog(temp_dir, stac_config)
+    create_stac_catalog(temp_dir, stac_config, progress_print_callback)
 
 
 if __name__ == '__main__':

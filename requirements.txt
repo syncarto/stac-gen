@@ -1,5 +1,6 @@
 awscli
 boto3
+numpy~=1.15
 rasterio
 rio-cogeo
 shapely
@@ -7,3 +8,4 @@ stac-validator
 # sat-stac dependencies
 requests>=2.19.1
 python-dateutil~=2.7.5
+sat-stac
