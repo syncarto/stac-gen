@@ -498,6 +498,7 @@ def add_footprint_id_to_item(stac_config, input_key, item_dict):
     item_dict['properties']['footprint_id'] = footprint_id
 
 def progress_print_callback(progress, message):
+    print("------------------")
     print(message)
     print(progress)
 
@@ -539,6 +540,8 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
     spatial_extent = get_initial_spatial_extent(collection)
     temporal_extent = get_initial_temporal_extent(collection)
     progress_callback(0, "Starting conversions...")
+    progress_counter = 0
+    progress_goal = len(input_keys)
 
     for input_key in input_keys:
 
@@ -603,7 +606,15 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
             # This is an expected failure if datetime is already a string from config
             pass
 
-    progress_callback(50, "Conversions complete... ")
+        progress_counter = progress_counter + 1
+        #multiply by 0.5 because we are saying that conversion is roughly 50% of the work
+        progress_callback(0.95 * (progress_counter / progress_goal), "Converting images...")
+    
+    progress_callback(.95, "Conversions complete... ")
+    progress_callback(.96, "Beginning catalog file uploads... ")
+    # reset the counter
+    progress_counter = 0
+
     # update collection metadata with max bounds discovered from all rasters
     if not stac_config['COLLECTION_METADATA'].get('extent', None):
         stac_config['COLLECTION_METADATA']['extent'] = {}
@@ -675,7 +686,7 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
     if not stac_config.get('DISABLE_STAC_LINT', False):
         lint_uploaded_stac(stac_config, root_catalog_url)
 
-    progress_callback(100, "Uploads complete... ")
+    progress_callback(100, "Catalog uploads complete... ")
 
     # return final params so library user can update db, etc.
     return stac_config

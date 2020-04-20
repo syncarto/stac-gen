@@ -47,7 +47,7 @@ docker-compose up
 -- Then the container can be accessed with:
 ```
 $ docker exec -it stac-gen-1 /bin/bash
-``
+```
 
 # Config file details
 
