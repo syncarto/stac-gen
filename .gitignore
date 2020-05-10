@@ -7,3 +7,6 @@ naip_configs
 build/
 dist/
 stac_gen.egg-info/
+credentials
+config.json
+work/
