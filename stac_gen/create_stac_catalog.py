@@ -16,7 +16,7 @@ import rasterio
 import rasterio.warp
 import shapely.geometry
 import satstac
-
+import ptvsd
 
 STAC_DATE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -353,14 +353,19 @@ def convert_to_cog(stac_config, temp_dir, input_url):
     s3_key = '{}/{}/{}'.format(stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], cog_filename)
     cog_url = 's3://{}/{}'.format(stac_config['OUTPUT_BUCKET_NAME'], s3_key)
 
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(stac_config['BUCKET_NAME'])
+
     # copy file to local
     input_filename = os.path.join(temp_dir, os.path.basename(input_url))
-    print('downloading file {}'.format(input_filename))
-    cmd = ['aws', 's3', 'cp', '--quiet', input_url, input_filename]
-    print(' '.join(cmd))
     try:
-        output = subprocess.check_output(cmd).decode()
-        print(output)
+        #print('downloading file {}'.format(input_filename))
+        #cmd = ['aws', 's3', 'cp', '--quiet', input_url, input_filename]
+        #print(' '.join(cmd))
+        #output = subprocess.check_output(cmd).decode()
+        bckt, key = input_url.replace("s3://", "").split("/", 1)
+        download_s3_file(bucket=bucket,key=key,filename=input_filename,requester_pays=stac_config.get('REQUESTER_PAYS', False))
+        #print(output)
     except:
         print('retrying {} with urlretrieve'.format(input_url))
         urllib.request.urlretrieve(input_url, input_filename)
@@ -409,7 +414,10 @@ def validate_stac_config(stac_config):
         # NOTE this is used as part of s3 key path due to sat-stac implementation
         stac_config['COLLECTION_METADATA']['id'] = str(uuid.uuid4())
 
-    if not stac_config.get('REQUESTER_PAYS', False):
+    if not stac_config.get('PRIVATE_BUCKET', None):
+        stac_config['PRIVATE_BUCKET']= False
+
+    if not stac_config.get('REQUESTER_PAYS', False) and not stac_config['PRIVATE_BUCKET']:
         if not stac_config.get('BUCKET_BASE_URL', None):
             stac_config['BUCKET_BASE_URL'] = build_https_url_from_bucket_name(
                     stac_config['BUCKET_NAME'],
@@ -714,4 +722,12 @@ def parse_args_and_run():
 
 
 if __name__ == '__main__':
+    # print("Waiting to attach")
+
+    # address = ('0.0.0.0', 3000)
+    # ptvsd.enable_attach(address)
+    # ptvsd.wait_for_attach()
+    # time.sleep(2)
+    # print("attached")
+
     parse_args_and_run()
