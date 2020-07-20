@@ -417,6 +417,14 @@ def validate_stac_config(stac_config):
     if not stac_config.get('PRIVATE_BUCKET', None):
         stac_config['PRIVATE_BUCKET']= False
 
+    if not stac_config.get('DISABLE_STAC_LINT', None):
+        if stac_config['PRIVATE_BUCKET']:
+            stac_config['DISABLE_STAC_LINT']= True
+        else:
+            stac_config['DISABLE_STAC_LINT']= False
+        
+    
+
     if not stac_config.get('REQUESTER_PAYS', False) and not stac_config['PRIVATE_BUCKET']:
         if not stac_config.get('BUCKET_BASE_URL', None):
             stac_config['BUCKET_BASE_URL'] = build_https_url_from_bucket_name(
@@ -722,6 +730,7 @@ def parse_args_and_run():
 
 
 if __name__ == '__main__':
+    # uncomment this code to use VS Code for debugging
     # print("Waiting to attach")
 
     # address = ('0.0.0.0', 3000)
