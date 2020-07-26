@@ -755,12 +755,12 @@ def parse_args_and_run():
 if __name__ == '__main__':
     # python3 stac_gen/create_stac_catalog.py --config wroc_config.json --tempdir /code/temp_dir
     # uncomment this code to use VS Code for debugging
-    print("Waiting to attach")
+    # print("Waiting to attach")
 
-    address = ('0.0.0.0', 3000)
-    ptvsd.enable_attach(address)
-    ptvsd.wait_for_attach()
-    time.sleep(2)
-    print("attached")
+    # address = ('0.0.0.0', 3000)
+    # ptvsd.enable_attach(address)
+    # ptvsd.wait_for_attach()
+    # time.sleep(2)
+    # print("attached")
 
     parse_args_and_run()
