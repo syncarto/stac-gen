@@ -9,7 +9,7 @@
   "COG_SUFFIX": ".tif",
   "CATALOG_ID": "GenericImageryCatalog",
   "CATALOG_DESCRIPTION": "catalog of generic images",
-  "ROOT_CATALOG_DIR": "",
+  "CATALOG_ROOT_DIR": "",
   "COLLECTION_METADATA": {
     "id": "GenericImageryCollection",
     "description": "collection of generic images",

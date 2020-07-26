@@ -96,7 +96,7 @@ def create_item(stac_config, image_id, image_url, bounds, epsg):
 
 
 def publish_to_s3(stac_config, catalog_dir):
-    s3 = boto3.resource('s3', region_name=stac_config['OUTPUT_BUCKET_REGION'])
+    s3 = boto3.resource('s3', region_name=stac_config['CATALOG_BUCKET_REGION'])
 
     # simply pushes every json file in catalog_dir to S3, maintining dir hierarchy
     root_path = pathlib.Path(catalog_dir)
@@ -105,7 +105,7 @@ def publish_to_s3(stac_config, catalog_dir):
         # remove the temp_dir part of the path to get s3 key
         s3_key = str(json_path.relative_to(root_path))
 
-        new_object = s3.Object(stac_config['OUTPUT_BUCKET_NAME'], s3_key)
+        new_object = s3.Object(stac_config['CATALOG_BUCKET_NAME'], s3_key)
         print('uploading {} to {}'.format(str(json_path), s3_key))
         new_object.upload_file(str(json_path))
         print('...upload complete')
@@ -350,22 +350,30 @@ def validate_cog(url):
 def convert_to_cog(stac_config, temp_dir, input_url):
     parts = os.path.basename(input_url).split('.')
     cog_filename = ''.join(parts[:-1]) + '_COG.TIF'
-    s3_key = '{}/{}/{}'.format(stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], cog_filename)
+    s3_key = '{}/{}/{}'.format(stac_config['OUTPUT_ROOT_DIR'], stac_config['COLLECTION_METADATA']['id'], cog_filename)
     cog_url = 's3://{}/{}'.format(stac_config['OUTPUT_BUCKET_NAME'], s3_key)
 
     s3 = boto3.resource('s3')
-    bucket = s3.Bucket(stac_config['BUCKET_NAME'])
+    src_bucket = s3.Bucket(stac_config['BUCKET_NAME'])
+
+    protocol, path = input_url.split(":", 1)
 
     # copy file to local
     input_filename = os.path.join(temp_dir, os.path.basename(input_url))
     try:
-        #print('downloading file {}'.format(input_filename))
-        #cmd = ['aws', 's3', 'cp', '--quiet', input_url, input_filename]
-        #print(' '.join(cmd))
-        #output = subprocess.check_output(cmd).decode()
-        bckt, key = input_url.replace("s3://", "").split("/", 1)
-        download_s3_file(bucket=bucket,key=key,filename=input_filename,requester_pays=stac_config.get('REQUESTER_PAYS', False))
-        #print(output)
+        if protocol == "https":
+            print('downloading file {}'.format(input_filename))
+            cmd = ['aws', 's3', 'cp', '--quiet', input_url, input_filename]
+            print(' '.join(cmd))
+            output = subprocess.check_output(cmd).decode()
+            print(output)
+        elif protocol == "s3":
+            bckt, key = input_url.replace("s3://", "").split("/", 1)
+            download_s3_file(bucket=src_bucket,key=key,filename=input_filename,requester_pays=stac_config.get('REQUESTER_PAYS', False))
+        else:
+            print ("Convert_to_cog: Unsupported protocol")
+            return None
+        
     except:
         print('retrying {} with urlretrieve'.format(input_url))
         urllib.request.urlretrieve(input_url, input_filename)
@@ -385,7 +393,7 @@ def convert_to_cog(stac_config, temp_dir, input_url):
     print(output)
     print('...upload complete')
 
-    return cog_url
+    return cog_url, output_filename
 
 
 def build_https_url_from_bucket_name(bucket_name, bucket_region):
@@ -423,7 +431,11 @@ def validate_stac_config(stac_config):
         else:
             stac_config['DISABLE_STAC_LINT']= False
         
-    
+    if not stac_config.get('CATALOG_BUCKET_NAME', None):
+        stac_config['OUTPUT_BUCKET_NAME'] = stac_config['CATALOG_BUCKET_NAME']
+
+    if not stac_config.get('CATALOG_BUCKET_REGION', None):
+        stac_config['CATALOG_BUCKET_REGION'] = stac_config['OUTPUT_BUCKET_REGION']
 
     if not stac_config.get('REQUESTER_PAYS', False) and not stac_config['PRIVATE_BUCKET']:
         if not stac_config.get('BUCKET_BASE_URL', None):
@@ -437,6 +449,11 @@ def validate_stac_config(stac_config):
                     stac_config['OUTPUT_BUCKET_NAME'],
                     stac_config['OUTPUT_BUCKET_REGION']
                 )
+        if not stac_config.get('CATALOG_BUCKET_BASE_URL', None):
+	        stac_config['CATALOG_BUCKET_BASE_URL'] = build_https_url_from_bucket_name(
+                    stac_config['CATALOG_BUCKET_NAME'],
+                    stac_config['CATALOG_BUCKET_REGION']
+                )
     else:
         if not stac_config.get('BUCKET_BASE_URL', None):
             stac_config['BUCKET_BASE_URL'] = build_s3_url_from_bucket_name(
@@ -446,6 +463,10 @@ def validate_stac_config(stac_config):
         if not stac_config.get('OUTPUT_BUCKET_BASE_URL', None):
             stac_config['OUTPUT_BUCKET_BASE_URL'] = build_s3_url_from_bucket_name(
                     stac_config['OUTPUT_BUCKET_NAME']
+                )
+        if not stac_config.get('CATALOG_BUCKET_BASE_URL', None):
+	        stac_config['CATALOG_BUCKET_BASE_URL'] = build_s3_url_from_bucket_name(
+                    stac_config['CATALOG_BUCKET_NAME']
                 )
 
     if not stac_config.get('S3_KEY_TO_IMAGE_ID', None):
@@ -485,8 +506,8 @@ def get_initial_temporal_extent(collection):
     except:
         print('returning empty initial temporal extent')
         extent = {
-                    'earliest': None,
-                    'latest': None,
+                    'earliest': datetime.strptime("2999-01-01T00:00:00Z", STAC_DATE_FORMAT),
+                    'latest': datetime.strptime("0001-01-01T00:00:00Z", STAC_DATE_FORMAT),
                 }
     print('initial temporal extent: {}'.format(extent))
     return extent
@@ -528,21 +549,22 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
     validate_stac_config(stac_config)
 
     s3 = boto3.resource('s3')
-    bucket = s3.Bucket(stac_config['BUCKET_NAME'])
+    src_bucket = s3.Bucket(stac_config['BUCKET_NAME'])
+    catalog_bucket = s3.Bucket(stac_config['CATALOG_BUCKET_NAME'])
 
     input_keys = get_s3_listing(stac_config)
     input_keys = [f for f in input_keys if f.endswith(stac_config['COG_SUFFIX'])]
 
     item_dicts = []
 
-    collection_dir = os.path.join(stac_config['OUTPUT_BUCKET_BASE_URL'], stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'])
+    collection_dir = os.path.join(stac_config['CATALOG_BUCKET_BASE_URL'], stac_config['CATALOG_ROOT_DIR'], stac_config['COLLECTION_METADATA']['id'])
     collection_url = os.path.join(collection_dir, 'catalog.json')
     collection_already_exists = False
     try:
         if collection_url.startswith('s3://'):
-            collection_filename = os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json')
-            s3_key = os.path.join(stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json')
-            download_s3_file(s3.Bucket(stac_config['OUTPUT_BUCKET_NAME']), s3_key, collection_filename, stac_config.get('REQUESTER_PAYS', False))
+            collection_filename = os.path.join(temp_dir, stac_config['CATALOG_ROOT_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json')
+            s3_key = os.path.join(stac_config['CATALOG_ROOT_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json')
+            download_s3_file(catalog_bucket, s3_key, collection_filename, stac_config.get('REQUESTER_PAYS', False))
             collection = satstac.Collection.open(collection_filename)
         else:
             collection = satstac.Collection.open(collection_url)
@@ -573,6 +595,7 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
         auto_cog_option = stac_config.get('AUTO_COG_CONVERT', None)
         assert auto_cog_option in ('disable', 'allow_if_needed', 'force')
 
+        rasterio_image_url = image_url
         if auto_cog_option in ('allow_if_needed', 'force'):
             if auto_cog_option == 'force':
                 is_valid_cog = False
@@ -584,15 +607,15 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
 
             if not is_valid_cog:
                 print('running convert_to_cog on {}'.format(image_url))
-                cog_image_url = convert_to_cog(stac_config, temp_dir, image_url)
-
+                cog_image_url, cog_file_path = convert_to_cog(stac_config, temp_dir, image_url)
+                rasterio_image_url = cog_file_path
                 # create the stac item pointing to the COG
                 # TODO also reference the original file in assets?
                 image_url = cog_image_url
         elif auto_cog_option == 'disable':
             print('auto COG conversion is disabled')
 
-        with rasterio.open(image_url, 'r') as raster_file:
+        with rasterio.open(rasterio_image_url, 'r') as raster_file:
             bounds = raster_file.bounds
             bounds_geo = rasterio.warp.transform_bounds(raster_file.crs, 4326,
                     bounds.left, bounds.bottom, bounds.right, bounds.top)
@@ -610,7 +633,7 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
             item_dicts.append(item_dict)
 
         if 'S3_KEY_TO_FGDC_S3_KEY' in stac_config:
-            add_fgdc_metadata_to_item(stac_config, temp_dir, bucket, input_key, item_dict)
+            add_fgdc_metadata_to_item(stac_config, temp_dir, src_bucket, input_key, item_dict)
 
         update_spatial_extent(spatial_extent, bounds_geo)
         update_temporal_extent(temporal_extent, item_dict['properties']['datetime'])
@@ -655,19 +678,19 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
     if collection_already_exists:
         # so that changes to collection are written to disk instead of trying
         # to write to remote url...
-        collection.save_as(os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json'))
+        collection.save_as(os.path.join(temp_dir, stac_config['CATALOG_ROOT_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json'))
 
     # try to open existing root catalog so we can append to it,
     # otherwise create a new one
-    root_catalog_dir = os.path.join(stac_config['OUTPUT_BUCKET_BASE_URL'], stac_config['ROOT_CATALOG_DIR'])
+    root_catalog_dir = os.path.join(stac_config['CATALOG_BUCKET_BASE_URL'], stac_config['CATALOG_ROOT_DIR'])
     root_catalog_url = os.path.join(root_catalog_dir, 'catalog.json')
     # need to return this to user for sat-api ingest
     stac_config['ROOT_CATALOG_URL'] = root_catalog_url
     try:
         if root_catalog_url.startswith('s3://'):
-            catalog_filename = os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json')
-            s3_key = os.path.join(stac_config['ROOT_CATALOG_DIR'], 'catalog.json')
-            download_s3_file(s3.Bucket(stac_config['OUTPUT_BUCKET_NAME']), s3_key, catalog_filename, stac_config.get('REQUESTER_PAYS', False))
+            catalog_filename = os.path.join(temp_dir, stac_config['CATALOG_ROOT_DIR'], 'catalog.json')
+            s3_key = os.path.join(stac_config['CATALOG_ROOT_DIR'], 'catalog.json')
+            download_s3_file(catalog_bucket, s3_key, catalog_filename, stac_config.get('REQUESTER_PAYS', False))
             catalog = satstac.Collection.open(catalog_filename)
         else:
             catalog = satstac.Catalog.open(root_catalog_url)
@@ -683,7 +706,7 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
                   root=root_catalog_dir,
                 )
 
-    catalog.save_as(os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json'))
+    catalog.save_as(os.path.join(temp_dir, stac_config['CATALOG_ROOT_DIR'], 'catalog.json'))
 
     if not collection_already_exists:
         # only if collection not already linked to root catalog; otherwise
@@ -730,13 +753,14 @@ def parse_args_and_run():
 
 
 if __name__ == '__main__':
+    # python3 stac_gen/create_stac_catalog.py --config wroc_config.json --tempdir /code/temp_dir
     # uncomment this code to use VS Code for debugging
-    # print("Waiting to attach")
+    print("Waiting to attach")
 
-    # address = ('0.0.0.0', 3000)
-    # ptvsd.enable_attach(address)
-    # ptvsd.wait_for_attach()
-    # time.sleep(2)
-    # print("attached")
+    address = ('0.0.0.0', 3000)
+    ptvsd.enable_attach(address)
+    ptvsd.wait_for_attach()
+    time.sleep(2)
+    print("attached")
 
     parse_args_and_run()

@@ -72,7 +72,7 @@ $ docker exec -it stac-gen-1 /bin/bash
   "CATALOG_ID": "NAIP_wi_2017_100cm",
   "CATALOG_DESCRIPTION": "NAIP_wi_2017_100cm",
   // The root catalog will be uploaded under this S3 prefix:
-  "ROOT_CATALOG_DIR": "naip",
+  "CATALOG_ROOT_DIR": "naip",
   // Add metadata as desired for the collection that will be linked to the root catalog:
   "COLLECTION_METADATA": {
     // Note due to behavior of sat-stac, the "id" will also be the location of the collection json file on S3:
