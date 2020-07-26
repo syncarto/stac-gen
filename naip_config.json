@@ -10,7 +10,7 @@
   "COG_SUFFIX": ".tif",
   "CATALOG_ID": "NAIP_wi_2017_100cm",
   "CATALOG_DESCRIPTION": "NAIP_wi_2017_100cm",
-  "ROOT_CATALOG_DIR": "naip",
+  "CATALOG_ROOT_DIR": "naip",
   "COLLECTION_METADATA": {
     "id": "wi/2017/100cm/rgb",
     "description": "NAIP wi 2017 100cm",
