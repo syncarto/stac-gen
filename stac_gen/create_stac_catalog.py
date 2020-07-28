@@ -350,7 +350,7 @@ def validate_cog(url):
 def convert_to_cog(stac_config, temp_dir, input_url):
     parts = os.path.basename(input_url).split('.')
     cog_filename = ''.join(parts[:-1]) + '_COG.TIF'
-    s3_key = '{}/{}/{}'.format(stac_config['OUTPUT_ROOT_DIR'], stac_config['COLLECTION_METADATA']['id'], cog_filename)
+    s3_key = '{}/{}'.format(stac_config['OUTPUT_ROOT_DIR'], cog_filename)
     cog_url = 's3://{}/{}'.format(stac_config['OUTPUT_BUCKET_NAME'], s3_key)
 
     s3 = boto3.resource('s3')
