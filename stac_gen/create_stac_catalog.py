@@ -393,6 +393,9 @@ def convert_to_cog(stac_config, temp_dir, input_url):
     print(output)
     print('...upload complete')
 
+    print( "delete source image ...")
+    os.remove(input_filename)
+
     return cog_url, output_filename
 
 
@@ -596,6 +599,7 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
         assert auto_cog_option in ('disable', 'allow_if_needed', 'force')
 
         rasterio_image_url = image_url
+        cog_file_path = None
         if auto_cog_option in ('allow_if_needed', 'force'):
             if auto_cog_option == 'force':
                 is_valid_cog = False
@@ -644,6 +648,10 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
         except AttributeError:
             # This is an expected failure if datetime is already a string from config
             pass
+
+        if cog_file_path:
+            print( "delete cog image ...")
+            os.remove(cog_file_path)
 
         progress_counter = progress_counter + 1
         #multiply by 0.5 because we are saying that conversion is roughly 50% of the work
@@ -755,12 +763,12 @@ def parse_args_and_run():
 if __name__ == '__main__':
     # python3 stac_gen/create_stac_catalog.py --config wroc_config.json --tempdir /code/temp_dir
     # uncomment this code to use VS Code for debugging
-    # print("Waiting to attach")
+    print("Waiting to attach")
 
-    # address = ('0.0.0.0', 3000)
-    # ptvsd.enable_attach(address)
-    # ptvsd.wait_for_attach()
-    # time.sleep(2)
-    # print("attached")
+    address = ('0.0.0.0', 3000)
+    ptvsd.enable_attach(address)
+    ptvsd.wait_for_attach()
+    time.sleep(2)
+    print("attached")
 
     parse_args_and_run()
