@@ -1,8 +1,8 @@
 awscli
 boto3
 numpy~=1.15
-rasterio
-rio-cogeo
+rasterio~=1.1.3
+rio-cogeo~=1.1.10
 shapely
 stac-validator
 # sat-stac dependencies

@@ -380,7 +380,7 @@ def convert_to_cog(stac_config, temp_dir, input_url):
     print('...download complete')
 
     output_filename = os.path.join(temp_dir, cog_filename)
-    args = ['rio', 'cogeo', 'create', input_filename, output_filename, '--cog-profile', 'deflate']
+    args = ['rio', 'cogeo', 'create', input_filename, output_filename, '--forward-band-tags', '--cog-profile', 'deflate']
     print(' '.join(args))
     output = subprocess.check_output(args).decode()
     print(output)
