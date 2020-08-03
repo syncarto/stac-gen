@@ -690,14 +690,15 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
 
     # try to open existing root catalog so we can append to it,
     # otherwise create a new one
+    root_catalog_name = 'catalog.json'
     root_catalog_dir = os.path.join(stac_config['CATALOG_BUCKET_BASE_URL'], stac_config['CATALOG_ROOT_DIR'])
-    root_catalog_url = os.path.join(root_catalog_dir, 'catalog.json')
+    root_catalog_url = os.path.join(root_catalog_dir,root_catalog_name )
     # need to return this to user for sat-api ingest
     stac_config['ROOT_CATALOG_URL'] = root_catalog_url
     try:
         if root_catalog_url.startswith('s3://'):
-            catalog_filename = os.path.join(temp_dir, stac_config['CATALOG_ROOT_DIR'], 'catalog.json')
-            s3_key = os.path.join(stac_config['CATALOG_ROOT_DIR'], 'catalog.json')
+            catalog_filename = os.path.join(temp_dir, stac_config['CATALOG_ROOT_DIR'], root_catalog_name)
+            s3_key = os.path.join(stac_config['CATALOG_ROOT_DIR'], root_catalog_name)
             download_s3_file(catalog_bucket, s3_key, catalog_filename, stac_config.get('REQUESTER_PAYS', False))
             catalog = satstac.Collection.open(catalog_filename)
         else:
@@ -714,7 +715,7 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
                   root=root_catalog_dir,
                 )
 
-    catalog.save_as(os.path.join(temp_dir, stac_config['CATALOG_ROOT_DIR'], 'catalog.json'))
+    catalog.save_as(os.path.join(temp_dir, stac_config['CATALOG_ROOT_DIR'], root_catalog_name))
 
     if not collection_already_exists:
         # only if collection not already linked to root catalog; otherwise
@@ -761,14 +762,14 @@ def parse_args_and_run():
 
 
 if __name__ == '__main__':
-    # python3 stac_gen/create_stac_catalog.py --config wroc_config.json --tempdir /code/temp_dir
+    # python3 stac_gen/create_stac_catalog.py --config wroc_config_alpha.json --tempdir /code/temp_dir
     # uncomment this code to use VS Code for debugging
-    print("Waiting to attach")
+    # print("Waiting to attach")
 
-    address = ('0.0.0.0', 3000)
-    ptvsd.enable_attach(address)
-    ptvsd.wait_for_attach()
-    time.sleep(2)
-    print("attached")
+    # address = ('0.0.0.0', 3000)
+    # ptvsd.enable_attach(address)
+    # ptvsd.wait_for_attach()
+    # time.sleep(2)
+    # print("attached")
 
     parse_args_and_run()
