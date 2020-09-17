@@ -12,7 +12,7 @@ services:
         - AWS_PROFILE=default
         - AWS_REQUEST_PAYER=
     entrypoint: ./entry-start.sh 
-    #command: python3 stac_gen/create_stac_catalog.py --config naip_config.json
+    #command: python3 stac_gen/create_stac_catalog.py --config wroc_config.json --tempdir /code/temp_dir
     ports:
       - '3000:3000'
     networks:

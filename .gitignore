@@ -10,3 +10,5 @@ stac_gen.egg-info/
 credentials
 config.json
 work/
+
+/temp_dir/*
