@@ -15,7 +15,8 @@ import boto3
 import rasterio
 import rasterio.warp
 import shapely.geometry
-import satstac
+# import satstac
+import pystac
 import ptvsd
 
 STAC_DATE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
@@ -543,15 +544,15 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
             collection_filename = os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json')
             s3_key = os.path.join(stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'], 'catalog.json')
             download_s3_file(s3.Bucket(stac_config['OUTPUT_BUCKET_NAME']), s3_key, collection_filename, stac_config.get('REQUESTER_PAYS', False))
-            collection = satstac.Collection.open(collection_filename)
+            collection = pystac.Collection.open(collection_filename)
         else:
-            collection = satstac.Collection.open(collection_url)
+            collection = pystac.Collection.open(collection_url)
 
         print('successfully opened existing collection at {}'.format(collection_url))
         collection_already_exists = True
     except:
         print('creating new collection')
-        collection = satstac.Collection(stac_config['COLLECTION_METADATA'])
+        collection = pystac.Collection(stac_config['COLLECTION_METADATA'])
 
     spatial_extent = get_initial_spatial_extent(collection)
     temporal_extent = get_initial_temporal_extent(collection)
@@ -668,16 +669,16 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
             catalog_filename = os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json')
             s3_key = os.path.join(stac_config['ROOT_CATALOG_DIR'], 'catalog.json')
             download_s3_file(s3.Bucket(stac_config['OUTPUT_BUCKET_NAME']), s3_key, catalog_filename, stac_config.get('REQUESTER_PAYS', False))
-            catalog = satstac.Collection.open(catalog_filename)
+            catalog = pystac.Collection.open(catalog_filename)
         else:
-            catalog = satstac.Catalog.open(root_catalog_url)
+            catalog = pystac.Catalog.open(root_catalog_url)
         print('successfully opened existing root catalog at {}'.format(root_catalog_url))
-    # Can't just catch STACError b/c satstac tries to make a signed s3 url if the original
+    # Can't just catch STACError b/c pystac tries to make a signed s3 url if the original
     # url fails, but parses the URL wrong which ultimately causes an SSLError
-    # except satstac.thing.STACError:
+    # except pystac.thing.STACError:
     except:
         print('creating new root catalog')
-        catalog = satstac.Catalog.create(
+        catalog = pystac.Catalog.create(
                   id=stac_config['CATALOG_ID'],
                   description=stac_config['CATALOG_DESCRIPTION'],
                   root=root_catalog_dir,
@@ -691,7 +692,7 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
         catalog.add_catalog(collection)
 
     for item_dict in item_dicts:
-        collection.add_item(satstac.Item(item_dict))
+        collection.add_item(pystac.Item(item_dict))
 
     if not stac_config.get('DISABLE_STAC_LINT', False):
         lint_stac_local(stac_config, temp_dir)
