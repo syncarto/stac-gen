@@ -1,0 +1,61 @@
+{
+	"COLLECTION_METADATA": {
+			"license": "Public",
+			"spatial_extent": null,
+			"stac_version": "1.0.0-beta.2",
+			"title": "Arlington Test 2010",
+			"id": "arlington-test-2010",
+			"description": "Arlington Test 2010",
+			"extent": {
+				"spatial": {
+				  "bbox": [
+					[
+					  -180,
+					  -90,
+					  180,
+					  90
+					]
+				  ]
+				},
+				"temporal": {
+				  "interval": [
+					[
+					  "2013-06-01T00:00:00Z",
+					  "2014-06-01T00:00:00Z"
+					]
+				  ]
+				}
+			}
+	},
+	"REQUESTER_PAYS": false,
+	"CATALOG_DESCRIPTION": "WROC Arlington Test 2010",
+	"AUTO_COG_CONVERT": "force",
+	"DISABLE_STAC_LINT": true,
+	"SPATIAL_RESOLUTION_METERS": 0.5,
+	"BAND1_MAPPING_ID": 1,
+	"BAND2_MAPPING_ID": 2,
+	"BAND3_MAPPING_ID": 3,
+	"BAND4_MAPPING_ID": 4,
+	"NUMBER_BANDS_PER_FILE": 4,
+	"NUMBER_FILES_PER_SCENE": 1,
+	"RASTER_DATA_TYPE_ID": null,
+	"SENSOR_NAME": "WROC",
+	"IS_PUBLIC": false,
+	"ITEM_TIMESTAMP": "2010-03-14T20:14:00Z",
+	"FILENAME_REGEX": "(?P<footprint>.+)\\.tif",
+	"COG_SUFFIX": ".tif",
+	"PRIVATE_BUCKET": true,
+	"ROOT_CATALOG_DIR": "wroc-wi/geotiff",
+	"CATALOG_ID": null,
+	"BUCKET_REGION": "us-west-2",
+	"BUCKET_PREFIX": "wroc-wi/geotiff/test",
+	"BUCKET_NAME": "syncarto-data-devel-usw2",
+	"OUTPUT_BUCKET_NAME": "syncarto-data-devel-usw2",
+	"OUTPUT_BUCKET_REGION": "us-west-2",
+	"OUTPUT_ROOT_DIR": "geotiff",
+	"CATALOG_BUCKET_NAME": "syncarto-data-devel-usw2",
+	"CATALOG_BUCKET_REGION": "us-west-2",
+	"CATALOG_ROOT_DIR": "ef5020ba-1ddb-11ea-8c5e-02a6f26aed74/stac",
+	"ID": 16,
+	"ORG_ID": "ef5020ba-1ddb-11ea-8c5e-02a6f26aed74"
+}

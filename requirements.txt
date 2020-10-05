@@ -6,7 +6,7 @@ rio-cogeo
 shapely
 stac-validator
 # sat-stac dependencies
-pystac 
+pystac>=0.5.2
 requests>=2.19.1
 python-dateutil~=2.7.5
 ptvsd

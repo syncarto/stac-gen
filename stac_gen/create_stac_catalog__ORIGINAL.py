@@ -15,7 +15,6 @@ import boto3
 import rasterio
 import rasterio.warp
 import shapely.geometry
-from shapely.geometry import Polygon, mapping
 # import satstac
 import pystac
 import ptvsd
@@ -74,7 +73,6 @@ def create_item(stac_config, image_id, image_url, bounds, epsg):
                  'collection': collection_id,
                  'eo:epsg': epsg,
              },
-             'datetime':  datetime(2019, 5, 17), #stac_config.get('ITEM_TIMESTAMP', None),
              'assets': {
                  # following example at
                  # https://storage.googleapis.com/pdd-stac/disasters/hurricane-harvey/0831/20170831_172754_101c.json
@@ -521,10 +519,9 @@ def progress_print_callback(progress, message):
     print(message)
     print(progress)
 
-def create_stac_catalog_OLD(temp_dir, stac_config,progress_callback):
-    print(temp_dir)
-    print(stac_config)
-    print(progress_callback)
+
+
+def create_stac_catalog(temp_dir, stac_config,progress_callback):
     if os.path.isdir(temp_dir):
         shutil.rmtree(temp_dir)
     os.makedirs(temp_dir)
@@ -555,32 +552,7 @@ def create_stac_catalog_OLD(temp_dir, stac_config,progress_callback):
         collection_already_exists = True
     except:
         print('creating new collection')
-        # V<1.0 collection = pystac.Collection(stac_config['COLLECTION_METADATA'])
-        # collection = pystac.Collection(stac_config['COLLECTION_METADATA']['id'], stac_config['CATALOG_DESCRIPTION'], stac_config['COLLECTION_METADATA']['extent'])
-        #unioned_footprint = shape(footprint).union(shape(footprint2))
-        
-        collection_bbox =  stac_config['COLLECTION_METADATA']['extent']['spatial']['bbox'] #list(unioned_footprint.bounds)
-        spatial_extent = pystac.SpatialExtent(bboxes=[collection_bbox])
-        
-        collection_interval = [
-            datetime(2019, 5, 17),
-			datetime(2020, 5, 17)
-        ]
-        temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
-        
-        collection_extent = pystac.Extent(spatial=spatial_extent, temporal=temporal_extent)
-        #collection_extent = pystac.Extent(stac_config['COLLECTION_METADATA']['extent']['spatial'], stac_config['COLLECTION_METADATA']['extent']['temporal'])
-        
-        collection = pystac.Collection(
-                id=stac_config['COLLECTION_METADATA']['id'], 
-                description=stac_config['COLLECTION_METADATA']['description'],
-                extent=collection_extent, # May be throwin' error here: https://github.com/stac-utils/pystac/blob/develop/pystac/collection.py#L117
-                license=stac_config['COLLECTION_METADATA']['license']
-            )
-        print(collection.describe())
-        # There are no children or items in the catalog, since we haven't added anything yet.
-        print(list(collection.get_children()))
-        print(list(collection.get_items()))
+        collection = pystac.Collection(stac_config['COLLECTION_METADATA'])
 
     spatial_extent = get_initial_spatial_extent(collection)
     temporal_extent = get_initial_temporal_extent(collection)
@@ -678,9 +650,8 @@ def create_stac_catalog_OLD(temp_dir, stac_config,progress_callback):
             ]
     print('determined temporal extent: {}'.format(stac_config['COLLECTION_METADATA']['extent']['temporal']))
 
-    # V>1.0 this doesnt really seem to update anything, spatial/temporal extents already have these values.
-    #collection.extent['spatial'] = stac_config['COLLECTION_METADATA']['extent']['spatial']
-    #collection.extent['temporal'] = stac_config['COLLECTION_METADATA']['extent']['temporal']
+    collection.data['extent']['spatial'] = stac_config['COLLECTION_METADATA']['extent']['spatial']
+    collection.data['extent']['temporal'] = stac_config['COLLECTION_METADATA']['extent']['temporal']
 
     if collection_already_exists:
         # so that changes to collection are written to disk instead of trying
@@ -698,7 +669,6 @@ def create_stac_catalog_OLD(temp_dir, stac_config,progress_callback):
             catalog_filename = os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json')
             s3_key = os.path.join(stac_config['ROOT_CATALOG_DIR'], 'catalog.json')
             download_s3_file(s3.Bucket(stac_config['OUTPUT_BUCKET_NAME']), s3_key, catalog_filename, stac_config.get('REQUESTER_PAYS', False))
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! TRY EXAMINING THIS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             catalog = pystac.Collection.open(catalog_filename)
         else:
             catalog = pystac.Catalog.open(root_catalog_url)
@@ -708,65 +678,25 @@ def create_stac_catalog_OLD(temp_dir, stac_config,progress_callback):
     # except pystac.thing.STACError:
     except:
         print('creating new root catalog')
-        # V>1.0 catalog = pystac.Catalog.create(
-        catalog = pystac.Catalog(
+        catalog = pystac.Catalog.create(
                   id=stac_config['CATALOG_ID'],
                   description=stac_config['CATALOG_DESCRIPTION'],
-                  href=root_catalog_dir,
+                  root=root_catalog_dir,
                 )
-        #catalog.add_child(collection)
-        print(catalog.describe())
-    # V>1.0 catalog.save(os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json'))
-    # V>1.0 catalog.save_as(os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json'))
-    print(os.path.join(temp_dir,'catalog.json'))
-    # catalog.normalize_hrefs(os.path.join(temp_dir,'catalog.json'))
-    # collection.save("")?  * probabally using "self contained"
-    # cast the catalog as a collection? 
+
+    catalog.save_as(os.path.join(temp_dir, stac_config['ROOT_CATALOG_DIR'], 'catalog.json'))
 
     if not collection_already_exists:
         # only if collection not already linked to root catalog; otherwise
         # the collections initial list of links is cleared out
-        # V>1.0 catalog.add_catalog(collection)
-        catalog.add_child(collection)
-        
+        catalog.add_catalog(collection)
+
     for item_dict in item_dicts:
-        # V>1.0 collection.add_item(pystac.Item(item_dict))
-        itemA = pystac.Item(
-            id=item_dict["id"],
-            geometry=item_dict["geometry"],
-            bbox=item_dict["bbox"],
-            datetime=item_dict["datetime"],
-            properties=item_dict["properties"],
-        )
-        itemA.add_asset(
-            key='image', 
-            asset=pystac.Asset(
-                href=item_dict['assets']['visual']['href'],
-                media_type=pystac.MediaType.GEOTIFF
-            )
-        )
-        collection.add_item(itemA)
-    print(catalog.describe())
+        collection.add_item(pystac.Item(item_dict))
 
-    # pystac.write_file(catalog, dest_href=os.path.join(temp_dir,'catalog.json'))
-    print(catalog.get_self_href() is None)
-    print(temp_dir)
-    print(os.path.join(temp_dir))
-    #catalog.normalize_hrefs(os.path.join(temp_dir,'catalog.json'))
-    catalog.normalize_hrefs(os.path.join(temp_dir))
-    print(catalog.get_self_href())
-    #catalog.save_object(True)
-    #catalog.save_object(False)
-    # collection.save(catalog_type=pystac.CatalogType.ABSOLUTE_PUBLISHED)
-    #catalog.save(catalog_type=pystac.CatalogType.ABSOLUTE_PUBLISHED)
-    catalog.save(catalog_type=pystac.CatalogType.ABSOLUTE_PUBLISHED)
-    #pystac.write_file(catalog, dest_href=os.path.join(temp_dir,'catalog.json'))
-
-    #pystac.write_file(catalog, dest_href=os.path.join(temp_dir,'catalog2.json'))
     if not stac_config.get('DISABLE_STAC_LINT', False):
         lint_stac_local(stac_config, temp_dir)
-    
-    #pystac.write_file(collection, dest_href=os.path.join(temp_dir,'collection.json'))
+
     # Comment this out if testing to avoid actually pushing catalog to S3
     publish_to_s3(stac_config, temp_dir)
 
@@ -797,194 +727,17 @@ def parse_args_and_run():
     with open(config_path) as f:
         stac_config = json.loads(f.read())
     temp_dir = args.tempdir
-    create_stac_catalog_OLD(temp_dir, stac_config, progress_print_callback)
-    #create_stac_catalog(temp_dir, stac_config, progress_print_callback)
+    create_stac_catalog(temp_dir, stac_config, progress_print_callback)
 
-#########################################
-# CS START
-#########################################
-def get_bbox_and_footprint(raster_uri):
-    with rasterio.open(raster_uri) as ds:
-        bounds = ds.bounds
-        bbox = [bounds.left, bounds.bottom, bounds.right, bounds.top]
-        footprint = Polygon([
-            [bounds.left, bounds.bottom],
-            [bounds.left, bounds.top],
-            [bounds.right, bounds.top],
-            [bounds.right, bounds.bottom]
-        ])
-        
-        return (bbox, mapping(footprint))
-
-def create_stac_catalog(temp_dir, stac_config,progress_callback):
-    print(temp_dir)
-    print(stac_config)
-    print(progress_callback)
-    if os.path.isdir(temp_dir):
-        shutil.rmtree(temp_dir)
-    os.makedirs(temp_dir)
-
-    validate_stac_config(stac_config)
-
-    s3 = boto3.resource('s3')
-    bucket = s3.Bucket(stac_config['BUCKET_NAME'])
-
-    input_keys = get_s3_listing(stac_config)
-    input_keys = [f for f in input_keys if f.endswith(stac_config['COG_SUFFIX'])]
-
-    item_dicts = []
-
-    collection_dir = os.path.join(stac_config['OUTPUT_BUCKET_BASE_URL'], stac_config['ROOT_CATALOG_DIR'], stac_config['COLLECTION_METADATA']['id'])
-    collection_url = os.path.join(collection_dir, 'catalog.json')
-    collection_already_exists = False
-    ##
-
-    catalog = pystac.Catalog(
-        id=stac_config['COLLECTION_METADATA']['id'] + "_catalog", 
-        description=stac_config['COLLECTION_METADATA']['description'])
-    # There are no children or items in the catalog, since we haven't added anything yet.
-    print(list(catalog.get_children()))
-    print(list(catalog.get_items()))
-
-    # collection_extent = pystac.Extent(
-    #         spatial=spatial_extent, 
-    #         temporal=temporal_extent
-    #     )
-   
-    #collection_extent =  stac_config['COLLECTION_METADATA']['extent']
-
-    collection_bbox =  stac_config['COLLECTION_METADATA']['extent']['spatial']['bbox'] #list(unioned_footprint.bounds)
-    spatial_extent = pystac.SpatialExtent(bboxes=[collection_bbox])
-    
-    collection_interval = [
-        datetime(2019, 5, 17),
-        datetime(2020, 5, 17)
-    ]
-    temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
-    
-    collection_extent = pystac.Extent(spatial=spatial_extent, temporal=temporal_extent)
-    collection = pystac.Collection(
-            id=stac_config['COLLECTION_METADATA']['id'], 
-            description=stac_config['COLLECTION_METADATA']['description'],
-            extent=collection_extent,
-            license=stac_config['COLLECTION_METADATA']['license']
-        )
-
-    for input_key in input_keys:
-        if stac_config.get('REQUESTER_PAYS', False):
-            # rasterio needs s3 url not http for requester pays
-            # NOTE this will also result in the stac item asset link looking like
-            #      s3://... instead of https:// which is actually good b/c the ONLY
-            #      way to access it is via S3 api with requester pays
-            image_url = 's3://{}/{}'.format(stac_config['BUCKET_NAME'], input_key)
-        else:
-            image_url = stac_config['BUCKET_BASE_URL'] + input_key
-
-        bbox, footprint = get_bbox_and_footprint(image_url)
-        print(bbox)
-        print(footprint)
-
-        with rasterio.open(image_url, 'r') as raster_file:
-            bounds = raster_file.bounds
-            bounds_geo = rasterio.warp.transform_bounds(raster_file.crs, 4326,
-                    bounds.left, bounds.bottom, bounds.right, bounds.top)
-            print(bounds_geo)
-
-            image_id = config_to_function_map[stac_config['S3_KEY_TO_IMAGE_ID']](input_key)
-            print('determined item id {} from s3 key {}'.format(image_id, input_key))
-
-            epsg = None
-            if raster_file.crs.is_epsg_code:
-                epsg = raster_file.crs.to_epsg()
-
-            item_dict = create_item(stac_config, image_id, image_url, bounds_geo, epsg)
-            add_footprint_id_to_item(stac_config, input_key, item_dict)
-            item_dicts.append(item_dict)
-
-        item = pystac.Item(id=item_dict["id"], #id='local-image',
-                geometry=footprint,
-                bbox=bbox,
-                datetime=datetime.utcnow(), # stac_config.get('ITEM_TIMESTAMP', None), 
-                #properties={}           
-                #geometry=item_dict["geometry"],
-                #bbox=item_dict["bbox"],
-                #datetime=item_dict["datetime"],
-                properties=item_dict["properties"],
-            )
-
-        print(item.get_parent())
-        item.add_asset(
-            key='image', 
-            asset=pystac.Asset(
-                href=image_url, 
-                media_type=pystac.MediaType.GEOTIFF
-            )
-        )
-        # print(json.dumps(item.to_dict(), indent=4)) # <-- to examine the item as JSON
-        collection.add_item(item)
-        #catalog.add_item(item)
-    print("A catalog.describe()")
-    print(catalog.describe())
-    print("A collection.describe()")
-    print(collection.describe())
-    #collection.normalize_hrefs(os.path.join(temp_dir))
-    catalog.clear_items()
-    catalog.clear_children()
-    catalog.add_child(collection)
-    print("B catalog.describe()")
-    print(catalog.describe())
-    print("B collection.describe()")
-    print(collection.describe())
-    #print(catalog.get_self_href() is None)
-    #print(temp_dir)
-    #print(os.path.join(temp_dir))
-    #collection.normalize_hrefs(os.path.join(temp_dir))
-    catalog.normalize_hrefs(os.path.join(temp_dir))
-    #print(catalog.get_self_href())
-    print("C catalog.describe()")
-    print(catalog.describe())
-    print("C collection.describe()")
-    print(collection.describe())
-    ###############################################
-    # Having an issue saving here...
-    # At this point the structure should be Catalog > Collection > Item > Asset
-    # i.e., catalog.describe() should print:
-    # * <Catalog id=arlington-test-2010_catalog>
-    #     * <Collection id=arlington-test-2010>
-    #         * <Item id=arlington-test-2010-Arlington-NE>
-    #         * <Item id=arlington-test-2010-Arlington-NW>
-    # If I save a catalog with items directly under it, success!
-    # If I save a catalog with child collection containng items (e.g, above examle) --> FAIL!
-    # Error appears to occur here: https://github.com/stac-utils/pystac/blob/87d2f372311955fe5bee92e056deac9faeee6a0a/pystac/collection.py#L117
-
-    #collection.save(catalog_type=pystac.CatalogType.ABSOLUTE_PUBLISHED)
-    catalog.save(catalog_type=pystac.CatalogType.ABSOLUTE_PUBLISHED)
-    #catalog.save(catalog_type=pystac.CatalogType.SELF_CONTAINED)
-    #catalog.save(catalog_type=pystac.CatalogType.RELATIVE_PUBLISHED)
-    #catalog.normalize_and_save(root_href=os.path.join(os.path.join(temp_dir), 'stac-collection'), catalog_type=pystac.CatalogType.SELF_CONTAINED)
-    #catalog.save_as()
-    #catalog.normalize_and_save(root_href=os.path.join(temp_dir), catalog_type=pystac.CatalogType.SELF_CONTAINED)
-    #temp_dir.cleanup() # <-- Not sure what this cleans up
-###########################################
-# CS END
-###########################################
 
 if __name__ == '__main__':
-    # python3 stac_gen/create_stac_catalog.py --config wroc_config_codie.json --tempdir /code/temp_dir
     # uncomment this code to use VS Code for debugging
-    print("Waiting to attach")
-    # EXAMPLE catalog.json TO TARGET: https://syncarto-test.s3-us-west-2.amazonaws.com/orgs/ef5020ba-1ddb-11ea-8c5e-02a6f26aed74/stac/wroc-2015/catalog.json 
-    # EXAMPLE config.json: https://github.com/radiantearth/stac-spec/blob/master/collection-spec/examples/landsat-collection.json  
-    # More EXAMPLES: https://github.com/radiantearth/stac-spec/tree/master/item-spec/examples
-    # Saving the catalog: https://pystac.readthedocs.io/en/latest/tutorials/how-to-create-stac-catalogs.html?highlight=catalog.normalize_hrefs#Saving-the-catalog
-    # Tutorial overall to follow: https://github.com/stac-utils/pystac/blob/ce3e80a669c42640ed7a50758b2abcf5b96ae5d6/docs/tutorials/how-to-create-stac-catalogs.ipynb
-    # API Reference: https://pystac.readthedocs.io/en/latest/api.html
-    # S3 for testing: https://s3.console.aws.amazon.com/s3/buckets/syncarto-data-devel-usw2/?region=us-west-2&tab=overview
+    # print("Waiting to attach")
 
-    address = ('0.0.0.0', 3000)
-    ptvsd.enable_attach(address)
-    ptvsd.wait_for_attach()
-    time.sleep(2)
-    print("attached")
+    # address = ('0.0.0.0', 3000)
+    # ptvsd.enable_attach(address)
+    # ptvsd.wait_for_attach()
+    # time.sleep(2)
+    # print("attached")
 
     parse_args_and_run()

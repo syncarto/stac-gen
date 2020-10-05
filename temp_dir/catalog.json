@@ -1,0 +1,22 @@
+{
+    "id": "0a6246b0-c879-4483-ae7b-13d3da0a4ed4",
+    "stac_version": "1.0.0-beta.2",
+    "description": "WROC Arlington Test 2010",
+    "links": [
+        {
+            "rel": "root",
+            "href": "/code/temp_dir/catalog.json",
+            "type": "application/json"
+        },
+        {
+            "rel": "child",
+            "href": "/code/temp_dir/arlington-test-2010/collection.json",
+            "type": "application/json"
+        },
+        {
+            "rel": "self",
+            "href": "/code/temp_dir/catalog.json",
+            "type": "application/json"
+        }
+    ]
+}

@@ -1,0 +1,73 @@
+{
+    "type": "Feature",
+    "stac_version": "1.0.0-beta.2",
+    "id": "arlington-test-2010-Arlington-NE",
+    "properties": {
+        "datetime": "2019-05-17T00:00:00Z",
+        "collection": "arlington-test-2010",
+        "eo:epsg": null,
+        "footprint_id": "Arlington-NE_wroc_2010"
+    },
+    "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                [
+                    -89.4339197646655,
+                    43.369726016449036
+                ],
+                [
+                    -89.4339197646655,
+                    43.37305186102926
+                ],
+                [
+                    -89.4397175002225,
+                    43.37305186102926
+                ],
+                [
+                    -89.4397175002225,
+                    43.369726016449036
+                ],
+                [
+                    -89.4339197646655,
+                    43.369726016449036
+                ]
+            ]
+        ]
+    },
+    "links": [
+        {
+            "rel": "root",
+            "href": "/code/temp_dir/catalog.json",
+            "type": "application/json"
+        },
+        {
+            "rel": "collection",
+            "href": "/code/temp_dir/arlington-test-2010/collection.json",
+            "type": "application/json"
+        },
+        {
+            "rel": "self",
+            "href": "/code/temp_dir/arlington-test-2010/arlington-test-2010-Arlington-NE/arlington-test-2010-Arlington-NE.json",
+            "type": "application/json"
+        },
+        {
+            "rel": "parent",
+            "href": "/code/temp_dir/arlington-test-2010/collection.json",
+            "type": "application/json"
+        }
+    ],
+    "assets": {
+        "image": {
+            "href": "s3://syncarto-data-devel-usw2/wroc-wi/geotiff/arlington-test-2010/Arlington-NE_wroc_2010_COG.TIF",
+            "type": "image/tiff; application=geotiff"
+        }
+    },
+    "bbox": [
+        -89.4397175002225,
+        43.369726016449036,
+        -89.4339197646655,
+        43.37305186102926
+    ],
+    "collection": "arlington-test-2010"
+}
