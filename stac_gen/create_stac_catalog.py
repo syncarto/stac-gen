@@ -971,6 +971,7 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
 
 if __name__ == '__main__':
     # python3 stac_gen/create_stac_catalog.py --config wroc_config_codie.json --tempdir /code/temp_dir
+    # python3 stac_gen/create_stac_catalog.py --config wroc_config_codie_small.json --tempdir /code/temp_dir
     # uncomment this code to use VS Code for debugging
     print("Waiting to attach")
     # EXAMPLE catalog.json TO TARGET: https://syncarto-test.s3-us-west-2.amazonaws.com/orgs/ef5020ba-1ddb-11ea-8c5e-02a6f26aed74/stac/wroc-2015/catalog.json 
