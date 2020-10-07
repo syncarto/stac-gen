@@ -15,7 +15,7 @@ import boto3
 import rasterio
 import rasterio.warp
 import shapely.geometry
-from shapely.geometry import Polygon, mapping
+from shapely.geometry import Polygon, mapping, shape
 # import satstac
 import pystac
 import ptvsd
@@ -74,7 +74,7 @@ def create_item(stac_config, image_id, image_url, bounds, epsg):
                  'collection': collection_id,
                  'eo:epsg': epsg,
              },
-             'datetime':  datetime(2019, 5, 17), #stac_config.get('ITEM_TIMESTAMP', None),
+             'datetime': datetime.strptime(stac_config.get('ITEM_TIMESTAMP', None), '%Y-%m-%dT%H:%M:%SZ'), #datetime(2019, 5, 17), #stac_config.get('ITEM_TIMESTAMP', None),
              'assets': {
                  # following example at
                  # https://storage.googleapis.com/pdd-stac/disasters/hurricane-harvey/0831/20170831_172754_101c.json
@@ -559,11 +559,14 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
         
         collection_bbox =  stac_config['COLLECTION_METADATA']['extent']['spatial']['bbox'] #list(unioned_footprint.bounds)
         spatial_extent = pystac.SpatialExtent(bboxes=[collection_bbox])
-        
+        print(stac_config['COLLECTION_METADATA']['extent']['temporal'])
         collection_interval = [
-            datetime(2019, 5, 17), # CS: TODO Need to get valid input datetime instead of hardcoded
-			datetime(2020, 5, 17)
+            datetime.strptime(stac_config['COLLECTION_METADATA']['extent']['temporal']['interval'][0][0], '%Y-%m-%dT%H:%M:%SZ'),
+            datetime.strptime(stac_config['COLLECTION_METADATA']['extent']['temporal']['interval'][0][1], '%Y-%m-%dT%H:%M:%SZ')
+            #datetime(2019, 5, 17), 
+			#datetime(2020, 5, 17)
         ]
+        
         temporal_extent = pystac.TemporalExtent(intervals=[collection_interval])
         
         collection_extent = pystac.Extent(spatial=spatial_extent, temporal=temporal_extent)
@@ -721,7 +724,8 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
         # the collections initial list of links is cleared out
         # V>1.0 catalog.add_catalog(collection)
         catalog.add_child(collection)
-        
+    
+    unioned_footprint = [];
     for item_dict in item_dicts:
         # V>1.0 collection.add_item(pystac.Item(item_dict))
         itemA = pystac.Item(
@@ -739,11 +743,19 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
             )
         )
         collection.add_item(itemA)
+        # if unioned_footprint == []:
+        #     unioned_footprint = shapely.geometry.shape(item_dict["geometry"])
+        # else:
+        #     unioned_footprint = shapely.geometry.shape(unioned_footprint).union(shapely.geometry.shape(item_dict["geometry"]))
+    collection.update_extent_from_items()
+    #print(unioned_footprint.bounds)
     print(catalog.describe())
     print(catalog.get_self_href() is None) # There shouldnt be an href yet, we havent set it
     print(os.path.join(temp_dir))
-    # set href
+    # set href (LOACAL)
     catalog.normalize_hrefs(os.path.join(temp_dir))
+    # set href (s3)
+    #catalog.normalize_hrefs(os.path.join('s3://{}'.format(bucket.name))) # root_path = pathlib.Path(catalog_dir)
     print(catalog.get_self_href()) # There should be an href now
     # Save the catalog, and child asset (.jsons)
     catalog.save(catalog_type=pystac.CatalogType.ABSOLUTE_PUBLISHED)

@@ -1,0 +1,53 @@
+{
+    "id": "arlington-test-2010",
+    "stac_version": "1.0.0-beta.2",
+    "description": "Arlington Test 2010",
+    "links": [
+        {
+            "rel": "root",
+            "href": "/code/temp_dir/catalog.json",
+            "type": "application/json"
+        },
+        {
+            "rel": "item",
+            "href": "/code/temp_dir/arlington-test-2010/arlington-test-2010-Arlington-NE/arlington-test-2010-Arlington-NE.json",
+            "type": "application/json"
+        },
+        {
+            "rel": "item",
+            "href": "/code/temp_dir/arlington-test-2010/arlington-test-2010-Arlington-NW/arlington-test-2010-Arlington-NW.json",
+            "type": "application/json"
+        },
+        {
+            "rel": "self",
+            "href": "/code/temp_dir/arlington-test-2010/collection.json",
+            "type": "application/json"
+        },
+        {
+            "rel": "parent",
+            "href": "/code/temp_dir/catalog.json",
+            "type": "application/json"
+        }
+    ],
+    "extent": {
+        "spatial": {
+            "bbox": [
+                [
+                    -89.4397175002225,
+                    43.369726016449036,
+                    -89.43391611677322,
+                    43.373052591268426
+                ]
+            ]
+        },
+        "temporal": {
+            "interval": [
+                [
+                    "2010-03-14T20:14:00Z",
+                    "2010-03-14T20:14:00Z"
+                ]
+            ]
+        }
+    },
+    "license": "Public"
+}
