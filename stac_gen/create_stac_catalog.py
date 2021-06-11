@@ -20,7 +20,7 @@ import ptvsd
 
 STAC_DATE_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
-def generic_image_id_function(input_key):
+def generic_image_id_function(input_key, stac_config):
     # In this example,
     # the s3 key 'output/060901NE_COG.TIF'
     # becomes
@@ -28,16 +28,30 @@ def generic_image_id_function(input_key):
     image_id = os.path.basename(input_key).split('_')[0]
     return image_id
 
+def generic_image_id_function(input_key, stac_config):
+    # In this example,
+    # the s3 key 'output/060901NE_COG.TIF'
+    # becomes
+    # an item id '060901NE'
+    image_id = os.path.basename(input_key).split('_')[0]
+    return image_id
 
-def naip_image_id_function(input_key):
+def naip_image_id_function(input_key, stac_config):
     # In this example,
     # the s3 key 'wi/2017/100cm/rgb/42087/m_4208717_nw_16_1_20170922.tif'
     # becomes
     # an item id '42087/m_4208717_nw_16_1_20170922'
     subdir = input_key.split('/')[-2]
-    image_id = '{}/{}'.format(subdir, os.path.basename(input_key).split('.')[0])
+    image_id = footprint_id_from_key
     return image_id
 
+def footprint_id_function(input_key, stac_config):
+    # In this example,
+    # the s3 key 'output/060901NE_COG.TIF'
+    # becomes
+    # an item id '060901NE'
+    image_id = footprint_id_from_key(stac_config, input_key )
+    return image_id
 
 def naip_fgdc_function(input_key):
     return input_key.replace('/rgb/', '/fgdc/').replace('.tif', '.txt')
@@ -50,6 +64,7 @@ config_to_function_map = {
             'NAIP_FGDC_FUNCTION': naip_fgdc_function,
             'NAIP_IMAGE_ID_FUNCTION': naip_image_id_function,
             'GENERIC_IMAGE_ID_FUNCTION': generic_image_id_function,
+            'FOOTPRINT_ID_FUNCTION': footprint_id_function
         }
 
 
@@ -516,7 +531,7 @@ def get_initial_temporal_extent(collection):
     return extent
 
 
-def add_footprint_id_to_item(stac_config, input_key, item_dict):
+def footprint_id_from_key(stac_config, input_key):
     if 'FILENAME_REGEX' not in stac_config:
         return
 
@@ -535,7 +550,8 @@ def add_footprint_id_to_item(stac_config, input_key, item_dict):
         return
 
     print('extracted footprint id from filename: {}'.format(footprint_id))
-    item_dict['properties']['footprint_id'] = footprint_id
+    return footprint_id
+    
 
 def progress_print_callback(progress, message):
     print("------------------")
@@ -625,7 +641,7 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
                     bounds.left, bounds.bottom, bounds.right, bounds.top)
             print(bounds_geo)
 
-            image_id = config_to_function_map[stac_config['S3_KEY_TO_IMAGE_ID']](input_key)
+            image_id = config_to_function_map[stac_config['S3_KEY_TO_IMAGE_ID']](input_key,stac_config)
             print('determined item id {} from s3 key {}'.format(image_id, input_key))
 
             epsg = None
@@ -633,7 +649,8 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
                 epsg = raster_file.crs.to_epsg()
 
             item_dict = create_item(stac_config, image_id, image_url, bounds_geo, epsg)
-            add_footprint_id_to_item(stac_config, input_key, item_dict)
+            footprint_id = footprint_id_from_key(stac_config, input_key)
+            item_dict['properties']['footprint_id'] = footprint_id
             item_dicts.append(item_dict)
 
         if 'S3_KEY_TO_FGDC_S3_KEY' in stac_config:
@@ -714,8 +731,8 @@ def create_stac_catalog(temp_dir, stac_config,progress_callback):
                   description=stac_config['CATALOG_DESCRIPTION'],
                   root=root_catalog_dir,
                 )
-
-    catalog.save_as(os.path.join(temp_dir, stac_config['CATALOG_ROOT_DIR'], root_catalog_name))
+    local_path = os.path.join(temp_dir, stac_config['CATALOG_ROOT_DIR'], root_catalog_name)
+    catalog.save_as(local_path)
 
     if not collection_already_exists:
         # only if collection not already linked to root catalog; otherwise
@@ -772,4 +789,4 @@ if __name__ == '__main__':
     # time.sleep(2)
     # print("attached")
 
-    parse_args_and_run()
+    # parse_args_and_run()
